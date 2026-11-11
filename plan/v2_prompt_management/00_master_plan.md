@@ -11,7 +11,7 @@ history and not edited**. New phases continue the numbering from Phase 13.
 |---|---|---|
 | 13 Separate GCP resources for this repo | `01_phase13_separate_gcp_resources.md` | ✅ PR #1 (+ docs PR #2); 141 tests, 100 % coverage; old app verified unchanged |
 | 14 Jinja2 foundations | `02_phase14_jinja2_foundations.md` | ✅ PR #4; prompts byte-identical (golden tests), verified in production |
-| 15 Template features (partials, macros, loops, filters) | `03_phase15_template_features.md` | 📝 planned |
+| 15 Template features (partials, macros, loops, filters) | `03_phase15_template_features.md` | 🚧 code done, PR pending |
 | 16 Prompt versioning + observability | `04_phase16_versioning_observability.md` | 📝 planned |
 | 17 Few-shot examples | `05_phase17_few_shot_examples.md` | 📝 planned |
 | 18 Evaluation harness (local only) | `06_phase18_evaluation_harness.md` | 📝 planned |

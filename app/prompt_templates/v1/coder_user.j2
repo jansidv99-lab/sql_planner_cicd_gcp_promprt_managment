@@ -1,6 +1,4 @@
 {# Coder user prompt (v1). Variables: schema_block, outline (LLM output: data, never a template). #}
 {{ schema_block }}
 
-<outline>
-{{ outline }}
-</outline>
+{{ outline | tag("outline") }}

@@ -1,6 +1,7 @@
 """Prompt eval runner (Phase 18). LOCAL ONLY: it calls the real LLM and costs requests.
 
     python -m evals.run --versions v1 v2 v3 [--cases id1,id2] [--repeat N] --yes
+    python -m evals.run --rescore evals/results/<file>.json     (no LLM calls)
 
 Runs every dataset case through the real chain (`app.chain.run(..., prompt_version=v)`) for each
 version, scores the results deterministically (evals/scoring.py), prints a markdown report and
@@ -29,7 +30,7 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 from app import chain
 from app.llm import LLMFn, complete
 from app.prompts import available_versions
-from evals.scoring import CaseScore, score_case, summarise
+from evals.scoring import CaseScore, check, expected_statuses, score_case, summarise
 
 DATASET = Path(__file__).parent / "dataset.json"
 RESULTS_DIR = Path(__file__).parent / "results"
@@ -102,6 +103,33 @@ def run_eval(
     return scores, records
 
 
+def rescore(payload: dict, cases: Sequence[dict]) -> list[CaseScore]:
+    """Re-score stored runs with the CURRENT dataset checks: no LLM calls.
+
+    Used after fixing a check, so every version is judged by the same corrected rule.
+    """
+    by_id = {c["id"]: c for c in cases}
+    scores = []
+    for run in payload["runs"]:
+        case = by_id[run["case_id"]]
+        specs = case["expect"].get("checks", [])
+        accepted = run["status"] == chain.Status.OK.value
+        scores.append(
+            CaseScore(
+                case_id=run["case_id"],
+                version=run["version"],
+                status=run["status"],
+                status_ok=run["status"] in expected_statuses(case),
+                review_passed=run["review_passed"],
+                checks={spec: accepted and check(run["sql"], spec) for spec in specs},
+                prompt_tokens=run["prompt_tokens"],
+                completion_tokens=run["completion_tokens"],
+                latency_ms=run["latency_ms"],
+            )
+        )
+    return scores
+
+
 def render_report(scores: Sequence[CaseScore], versions: Sequence[str]) -> str:
     summary = summarise(scores)
     lines = [
@@ -143,7 +171,15 @@ def main(
     parser.add_argument("--cases", help="comma-separated case ids (default: all)")
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--yes", action="store_true", help="really call the LLM")
+    parser.add_argument("--rescore", type=Path, help="re-score a results file (no LLM calls)")
     args = parser.parse_args(argv)
+
+    if args.rescore:
+        payload = json.loads(args.rescore.read_text(encoding="utf-8"))
+        scores = rescore(payload, load_dataset())
+        print(f"Re-scored {len(scores)} stored runs with the current checks (no LLM calls).\n")
+        print(render_report(scores, payload["versions"]))
+        return 0
 
     unknown = [v for v in args.versions if v not in available_versions()]
     if unknown:

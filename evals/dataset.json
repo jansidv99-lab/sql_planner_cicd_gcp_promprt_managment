@@ -13,11 +13,11 @@
 
   {"id": "order_count_per_product", "columns": ["product"],
    "request": "Number of orders per product",
-   "expect": {"status": "ok", "checks": ["group_by:product", "agg:COUNT(*)"]}},
+   "expect": {"status": "ok", "checks": ["group_by:product", "agg:COUNT(*)|agg:COUNT(product)"]}},
 
   {"id": "monthly_revenue_2024", "columns": ["order_date", "amount"],
    "request": "Monthly revenue in 2024",
-   "expect": {"status": "ok", "checks": ["func:DATE_TRUNC", "agg:SUM(amount)", "filter:order_date", "group_by:order_date"]}},
+   "expect": {"status": "ok", "checks": ["func:DATE_TRUNC|func:EXTRACT", "agg:SUM(amount)", "filter:order_date", "group_by:order_date"]}},
 
   {"id": "yearly_units", "columns": ["order_date", "quantity"],
    "request": "Total quantity ordered per year",
@@ -41,7 +41,7 @@
 
   {"id": "daily_orders_last_quarter", "columns": ["order_date"],
    "request": "Number of orders per day in Q4 2024",
-   "expect": {"status": "ok", "checks": ["agg:COUNT(*)", "group_by:order_date", "filter:order_date"]}},
+   "expect": {"status": "ok", "checks": ["agg:COUNT(*)|agg:COUNT(order_date)", "group_by:order_date", "filter:order_date"]}},
 
   {"id": "ambiguous_best_products", "columns": ["product", "amount", "quantity"],
    "request": "Show me the best products",

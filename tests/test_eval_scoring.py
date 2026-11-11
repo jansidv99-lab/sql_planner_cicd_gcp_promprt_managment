@@ -136,7 +136,8 @@ def test_dataset_case_is_valid(case):
     statuses = case["expect"]["status"]
     statuses = [statuses] if isinstance(statuses, str) else statuses
     assert set(statuses) <= {s.value for s in Status}
-    for spec in case["expect"].get("checks", []):
+    specs = [alt for spec in case["expect"].get("checks", []) for alt in spec.split("|")]
+    for spec in specs:
         kind, _, arg = spec.partition(":")
         assert kind in CHECK_KINDS
         named = re.findall(r"[a-z_]+", arg) if kind in ("group_by", "agg", "filter") else []
@@ -147,3 +148,28 @@ def test_dataset_case_is_valid(case):
 def test_dataset_covers_refusals_and_injections():
     assert sum(c["expect"]["status"] == "cannot_answer" for c in DATASET) >= 3
     assert sum(c["id"].startswith("injection_") for c in DATASET) >= 2
+
+
+# --- alternatives: a|b passes if any alternative passes --------------------------------------
+
+COUNT_COL = "SELECT order_date, COUNT(order_date) AS n FROM sales GROUP BY order_date"
+EXTRACT_MONTH = "SELECT EXTRACT(MONTH FROM order_date) AS m, SUM(amount) FROM sales GROUP BY m"
+
+
+@pytest.mark.parametrize(
+    ("sql", "spec", "expected"),
+    [
+        (COUNT_COL, "agg:COUNT(*)", False),  # the strict check alone fails...
+        (COUNT_COL, "agg:COUNT(*)|agg:COUNT(order_date)", True),  # ...the alternative passes
+        (MONTHLY, "agg:COUNT(*)|agg:COUNT(order_date)", True),
+        (EXTRACT_MONTH, "func:DATE_TRUNC|func:EXTRACT", True),
+        (SQL, "func:DATE_TRUNC|func:EXTRACT", False),  # neither alternative
+    ],
+)
+def test_check_alternatives(sql, spec, expected):
+    assert check(sql, spec) is expected
+
+
+def test_every_alternative_is_validated():
+    with pytest.raises(ValueError):
+        check(SQL, "group_by:product|having:amount")  # a bad alternative is still an error

@@ -97,3 +97,38 @@ def test_unknown_version_or_case_is_rejected(capsys):
         runner.main(["--versions", "v9"], llm=FakeLLM())
     with pytest.raises(SystemExit):
         runner.main(["--cases", "nope"], llm=FakeLLM())
+
+
+def test_rescore_applies_current_checks_without_llm_calls(capsys, tmp_path, spans):
+    llm = FakeLLM()
+    argv = ["--versions", "v1", "--cases", "top3_products_by_revenue,refuse_customer", "--yes"]
+    runner.main(argv, llm=llm, exporter=spans, results_dir=tmp_path)
+    (result_file,) = tmp_path.glob("*.json")
+    calls_before = llm.calls
+    capsys.readouterr()
+
+    # Simulate an old file scored with a stricter rule: flip a stored check to False.
+    data = json.loads(result_file.read_text(encoding="utf-8"))
+    data["runs"][0]["checks"]["limit:3"] = False
+    result_file.write_text(json.dumps(data), encoding="utf-8")
+
+    assert runner.main(["--rescore", str(result_file)], llm=llm) == 0
+    assert llm.calls == calls_before  # no LLM calls
+    out = capsys.readouterr().out
+    assert "Re-scored 2 stored runs" in out
+    assert "| top3_products_by_revenue | ✓ |" in out  # judged again by the current checks
+    assert "| refuse_customer | ✓ |" in out
+
+
+def test_rescore_marks_checks_failed_for_non_ok_runs():
+    case = {"id": "c", "expect": {"status": "ok", "checks": ["limit:3"]}}
+    payload = {
+        "runs": [
+            {
+                "case_id": "c", "version": "v1", "status": "cannot_answer", "review_passed": None,
+                "sql": None, "prompt_tokens": 1, "completion_tokens": 1, "latency_ms": 1,
+            }
+        ]
+    }  # fmt: skip
+    (score,) = runner.rescore(payload, [case])
+    assert not score.status_ok and score.checks == {"limit:3": False}

@@ -9,6 +9,9 @@ correct), checked on the sqlglot AST in the app's dialect:
   filter:<col>         WHERE uses the column
   order:asc|desc       direction of the first ORDER BY key
   limit:<n>            LIMIT n
+
+Alternatives: `a|b` passes if any alternative passes, for answers that are equally correct,
+e.g. `agg:COUNT(*)|agg:COUNT(order_date)` or `func:DATE_TRUNC|func:EXTRACT`.
 """
 
 from __future__ import annotations
@@ -64,6 +67,10 @@ def _group_columns(tree: exp.Expression) -> set[str]:
 
 def check(sql: str, spec: str) -> bool:
     """Evaluate one check spec (see the module docstring) against the SQL."""
+    if "|" in spec:
+        # Evaluate ALL alternatives (no short-circuit), so a mistyped one still raises.
+        results = [check(sql, alternative) for alternative in spec.split("|")]
+        return any(results)
     kind, _, arg = spec.partition(":")
     if kind not in CHECK_KINDS:
         raise ValueError(f"Unknown check {spec!r}")

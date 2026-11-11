@@ -16,3 +16,6 @@ __pycache__/
 tests/
 plan/
 *.md
+
+# Phase 18: eval tooling is development-only
+evals/

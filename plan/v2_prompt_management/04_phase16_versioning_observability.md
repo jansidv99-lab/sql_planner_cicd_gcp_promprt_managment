@@ -1,6 +1,6 @@
 # Phase 16 — Prompt versioning + observability (detailed plan)
 
-**Status:** IN PROGRESS. Code done on `feature/prompt-versioning`; gate green (197 tests, 100 % coverage); v1 golden files unchanged; `check_templates()` → 10 files, versions v1, v2. Waiting on CI, merge and the CD check (production stays on v1).
+**Status:** DONE (2026-11-11). PR #8 (squash `c312c3b`). Gate: 197 tests, 100 % coverage; CI in-image check: 10 files, versions v1, v2. CD deployed `sql-planner-pm-00009-2gk` with `PROMPT_VERSION=v1` (repo variable unset → default). A UI request logged `prompt_version: v1`, `prompt_hashes` planner `7ffeb84c20a3` / coder `34e4b75928dd`, the same on the spans (trace `e417d529…`), and **identical to a local render of v1** for the same columns (v2 would be `fcaacb41dcd1` / `259c878b7426`).
 
 **Implementation notes (changes from the plan):**
 - Hints are computed **in the v2 template** from `types` (the sorted BigQuery types of the selected columns, from the new `schema.column_types()`). Every version gets `types`; v1 ignores it. The v1 `hints` slot from Phase 15 became `{% block hints %}`, the extension point v2 overrides.

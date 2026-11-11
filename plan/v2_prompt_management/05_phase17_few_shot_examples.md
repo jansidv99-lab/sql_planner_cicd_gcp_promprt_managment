@@ -1,6 +1,6 @@
 # Phase 17 — Few-shot examples (detailed plan)
 
-**Status:** IN PROGRESS. Code done on `feature/few-shot-examples`; gate green (238 tests, 100 % coverage); v1/v2 golden files unchanged; `check_templates()` → 14 files, versions v1, v2, v3. Waiting on CI, merge and the CD check (production stays on v1).
+**Status:** DONE (2026-11-11). PR #10 (squash `6cc7e75`). Gate: 238 tests, 100 % coverage; CI in-image check: 14 files, versions v1, v2, v3. CD deployed `sql-planner-pm-00011-zc6` (health ok, `PROMPT_VERSION=v1`). The UI log check was skipped by choice; v3 is measured locally in Phase 18.
 
 **Implementation notes:**
 - `examples.json` has 7 examples (6 answers + 1 refusal), written to **follow the v2 hints** (ROUND money, snake_case aliases, DATE literals), so v3 never contradicts v2.

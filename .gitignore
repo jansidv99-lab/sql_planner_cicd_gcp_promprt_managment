@@ -8,3 +8,6 @@ __pycache__/
 
 # Git Bash crash dumps
 *.stackdump
+
+# Phase 18: local eval outputs (contain generated SQL)
+evals/results/

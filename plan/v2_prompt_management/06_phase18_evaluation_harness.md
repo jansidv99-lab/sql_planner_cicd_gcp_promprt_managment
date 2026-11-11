@@ -1,6 +1,12 @@
 # Phase 18 — Evaluation harness, local only (detailed plan)
 
-**Status:** PLANNED, awaiting review.
+**Status:** IN PROGRESS. Code done on `feature/prompt-eval-harness`; gate green (297 tests, 100 % coverage of `app/`); dry run prints the plan (18 cases x 3 versions = up to 108 calls) and exits 2 without `--yes`. Next: the local smoke run, then the full run (Phase 19 uses its table).
+
+**Implementation notes:**
+- Dataset: 18 cases (12 answer cases, 4 must-refuse, 2 injection attempts that expect `cannot_answer` or a safe `ok`; a `review_failed` counts as a miss because the model was manipulated and only the gate saved it).
+- Checks: `group_by` (follows aliases and `GROUP BY 1` back to the SELECT list), `agg:FUNC(col)` (also inside `ROUND(...)`), `agg:COUNT(*)`, `func:NAME`, `filter`, `order`, `limit`, all on the sqlglot AST in the Reviewer's dialect. Property checks are scored only for accepted (`ok`) SQL; on any other status they count as failed.
+- The runner reads tokens and latency from the app's own spans via an in-memory exporter (tests pass the conftest exporter), so `app/` needed no change.
+- `evals/` is excluded from the Docker image (`.dockerignore`); `evals/results/` is gitignored. Coverage is still measured on `app/` only, but `evals/` has its own unit tests (fake LLM).
 **Part of:** [00_master_plan.md](00_master_plan.md) — prompt-engineering learning track
 **Depends on:** Phase 16 (`chain.run(prompt_version=…)`, versions) and Phase 17 (v3).
 **Unblocks:** Phase 19 (pick the version to promote using the results).

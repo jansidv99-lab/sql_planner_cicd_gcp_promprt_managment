@@ -1,6 +1,6 @@
 # =============================================================================
 # CI: Continuous Integration                        (created in Phase 10)
-# Plan: plan/11_phase10_ci.md
+# Plan: plan/v1_app_development_phase/11_phase10_ci.md
 # =============================================================================
 # What CI does: VERIFIES the code. It never deploys anything.
 #
@@ -44,7 +44,7 @@ jobs:
   # ===========================================================================
   # Job 1: quality: runs the Phase 8 quality gate, unchanged
   # ===========================================================================
-  # The 3 commands are the gate defined in Phase 8 (plan/09_phase8_tests_quality.md);
+  # The 3 commands are the gate defined in Phase 8 (plan/v1_app_development_phase/09_phase8_tests_quality.md);
   # the tests themselves were written in Phases 1-7, one test file per module.
   # The LLM is always faked (tests/conftest.py blocks real calls), so no API key is needed.
   quality:

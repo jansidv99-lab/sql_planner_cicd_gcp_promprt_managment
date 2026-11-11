@@ -1,6 +1,6 @@
 # =============================================================================
 # CD: Continuous Deployment to Cloud Run              (created in Phase 11)
-# Plan: plan/12_phase11_cd.md
+# Plan: plan/v1_app_development_phase/12_phase11_cd.md
 # =============================================================================
 # What CD does: DEPLOYS code that CI (ci.yml, Phase 10) has already verified.
 # It never runs tests itself, and it never runs for pull requests.

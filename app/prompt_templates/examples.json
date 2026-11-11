@@ -1,0 +1,51 @@
+[
+  {
+    "id": "total_by_product",
+    "columns": ["product", "amount"],
+    "request": "Total amount per product, highest first",
+    "outline": "1. Columns: product\n2. Filters: none\n3. Aggregations: ROUND(SUM(amount), 2) AS total_amount\n4. Grouping: product\n5. Ordering: total_amount DESC\n6. Limit: none",
+    "sql": "SELECT product, ROUND(SUM(amount), 2) AS total_amount FROM sales GROUP BY product ORDER BY total_amount DESC"
+  },
+  {
+    "id": "monthly_quantity_2024",
+    "columns": ["order_date", "quantity"],
+    "request": "Units ordered per month in 2024",
+    "outline": "1. Columns: none\n2. Filters: order_date BETWEEN DATE '2024-01-01' AND DATE '2024-12-31'\n3. Aggregations: DATE_TRUNC(order_date, MONTH) AS order_month, SUM(quantity) AS total_quantity\n4. Grouping: order_month\n5. Ordering: order_month ASC\n6. Limit: none",
+    "sql": "SELECT DATE_TRUNC(order_date, MONTH) AS order_month, SUM(quantity) AS total_quantity FROM sales WHERE order_date BETWEEN DATE '2024-01-01' AND DATE '2024-12-31' GROUP BY order_month ORDER BY order_month ASC"
+  },
+  {
+    "id": "refuse_missing_region",
+    "columns": ["product"],
+    "request": "Number of products sold per region",
+    "outline": "CANNOT_ANSWER: there is no region column in the schema",
+    "sql": null
+  },
+  {
+    "id": "top3_products_by_units",
+    "columns": ["product", "quantity"],
+    "request": "Top 3 products by units sold",
+    "outline": "1. Columns: product\n2. Filters: none\n3. Aggregations: SUM(quantity) AS total_quantity\n4. Grouping: product\n5. Ordering: total_quantity DESC\n6. Limit: 3",
+    "sql": "SELECT product, SUM(quantity) AS total_quantity FROM sales GROUP BY product ORDER BY total_quantity DESC LIMIT 3"
+  },
+  {
+    "id": "large_recent_orders",
+    "columns": ["order_date", "product", "amount"],
+    "request": "Orders over 500 since March 2024, newest first",
+    "outline": "1. Columns: order_date, product, amount\n2. Filters: amount > 500 AND order_date >= DATE '2024-03-01'\n3. Aggregations: none\n4. Grouping: none\n5. Ordering: order_date DESC\n6. Limit: none",
+    "sql": "SELECT order_date, product, amount FROM sales WHERE amount > 500 AND order_date >= DATE '2024-03-01' ORDER BY order_date DESC"
+  },
+  {
+    "id": "avg_amount_per_year",
+    "columns": ["order_date", "amount"],
+    "request": "Average order amount per year",
+    "outline": "1. Columns: none\n2. Filters: none\n3. Aggregations: EXTRACT(YEAR FROM order_date) AS order_year, ROUND(AVG(amount), 2) AS avg_amount\n4. Grouping: order_year\n5. Ordering: order_year ASC\n6. Limit: none",
+    "sql": "SELECT EXTRACT(YEAR FROM order_date) AS order_year, ROUND(AVG(amount), 2) AS avg_amount FROM sales GROUP BY order_year ORDER BY order_year ASC"
+  },
+  {
+    "id": "distinct_products",
+    "columns": ["product"],
+    "request": "List each product once, A to Z",
+    "outline": "1. Columns: product\n2. Filters: none\n3. Aggregations: none\n4. Grouping: product\n5. Ordering: product ASC\n6. Limit: none",
+    "sql": "SELECT product FROM sales GROUP BY product ORDER BY product ASC"
+  }
+]

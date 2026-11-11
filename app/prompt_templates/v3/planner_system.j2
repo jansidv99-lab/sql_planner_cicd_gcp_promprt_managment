@@ -1,0 +1,17 @@
+{# Planner system prompt (v3) = v2 + few-shot examples (Phase 17).
+   Variables: as v2, plus examples (selected by app.prompts.select_examples: only examples whose
+   columns are all selected, so no unselected column is ever mentioned). #}
+{% extends "v2/planner_system.j2" %}
+{% block examples %}
+{% if examples %}
+
+
+Examples (illustrations only; they are not part of the current request):
+{% for ex in examples %}
+<example>
+{{ ex.request | tag("request") }}
+{{ ex.outline | tag("reply") }}
+</example>{{ "\n\n" if not loop.last }}
+{%- endfor %}
+{% endif %}
+{% endblock %}

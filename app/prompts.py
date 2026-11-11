@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import functools
 import hashlib
+import json
 import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
@@ -29,6 +30,8 @@ from app import config
 CANNOT_ANSWER_PREFIX = "CANNOT_ANSWER:"
 
 TEMPLATE_DIR = Path(__file__).parent / "prompt_templates"
+EXAMPLES_FILE = TEMPLATE_DIR / "examples.json"
+MAX_EXAMPLES = 3
 _VERSION_DIR = re.compile(r"^v\d+$")
 
 
@@ -83,25 +86,70 @@ def _types(columns: Iterable[str]) -> list[str]:
 
 
 @dataclass(frozen=True)
+class Example:
+    """One worked example for few-shot prompts (Phase 17). `sql` is None for a refusal."""
+
+    id: str
+    columns: tuple[str, ...]
+    request: str
+    outline: str
+    sql: str | None
+
+
+@functools.lru_cache(maxsize=1)
+def load_examples() -> tuple[Example, ...]:
+    data = json.loads(EXAMPLES_FILE.read_text(encoding="utf-8"))
+    return tuple(
+        Example(d["id"], tuple(d["columns"]), d["request"], d["outline"], d.get("sql"))
+        for d in data
+    )
+
+
+def select_examples(
+    columns: Iterable[str], *, with_sql: bool = False, k: int = MAX_EXAMPLES
+) -> list[Example]:
+    """Examples whose columns are ALL selected, first k in file order (deterministic).
+
+    The subset rule keeps the schema guard intact: a prompt never shows an example that uses a
+    column the user didn't select. `with_sql=True` (Coder) skips refusal examples.
+    """
+    selected = set(columns)
+    matching = [
+        ex
+        for ex in load_examples()
+        if set(ex.columns) <= selected and (ex.sql is not None or not with_sql)
+    ]
+    return matching[:k]
+
+
+@dataclass(frozen=True)
 class PromptSet:
     """The 4 prompts of one version. System prompts get the selected columns so that versions
-    can adapt to them (v2: type-aware hints); v1 ignores them."""
+    can adapt to them (v2: type-aware hints, v3: few-shot examples); v1 ignores them."""
 
     version: str
 
     def planner_system(self, columns: Iterable[str]) -> str:
+        columns = tuple(columns)
         return render(
             self.version,
             "planner_system",
             cannot_answer_prefix=CANNOT_ANSWER_PREFIX,
             types=_types(columns),
+            examples=select_examples(columns),
         )
 
     def planner_user(self, schema_block: str, request: str) -> str:
         return render(self.version, "planner_user", schema_block=schema_block, request=request)
 
     def coder_system(self, columns: Iterable[str]) -> str:
-        return render(self.version, "coder_system", types=_types(columns))
+        columns = tuple(columns)
+        return render(
+            self.version,
+            "coder_system",
+            types=_types(columns),
+            examples=select_examples(columns, with_sql=True),
+        )
 
     def coder_user(self, schema_block: str, outline: str) -> str:
         return render(self.version, "coder_user", schema_block=schema_block, outline=outline)

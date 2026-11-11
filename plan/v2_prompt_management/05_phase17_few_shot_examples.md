@@ -1,6 +1,13 @@
 # Phase 17 — Few-shot examples (detailed plan)
 
-**Status:** PLANNED, awaiting review.
+**Status:** IN PROGRESS. Code done on `feature/few-shot-examples`; gate green (238 tests, 100 % coverage); v1/v2 golden files unchanged; `check_templates()` → 14 files, versions v1, v2, v3. Waiting on CI, merge and the CD check (production stays on v1).
+
+**Implementation notes:**
+- `examples.json` has 7 examples (6 answers + 1 refusal), written to **follow the v2 hints** (ROUND money, snake_case aliases, DATE literals), so v3 never contradicts v2.
+- v1 gets an empty `{% block examples %}`; `v3/*` extends v2 and fills it. The chain is v3 → v2 → v1.
+- `select_examples(columns, with_sql=False, k=3)`: the subset rule, first k in file order. The Planner may get the refusal example (shown as `<reply>CANNOT_ANSWER: …</reply>`); the Coder (`with_sql=True`) never does.
+- Whitespace: the loop uses `{%- endfor %}` plus a `"\n\n"` separator, so examples are blank-line separated with no trailing newline (checked with `repr` before saving the golden files).
+- Approximate system-prompt size (chars/4) with all 4 columns: Planner v1 211 → v2 292 → **v3 498** tokens; Coder 103 → 158 → **466**. With `order_date` alone no example matches, so v3 = v2. Phase 18 measures whether the extra tokens pay off.
 **Part of:** [00_master_plan.md](00_master_plan.md) — prompt-engineering learning track
 **Depends on:** Phase 16 (versions, `examples` block slot, `PromptSet`).
 **Unblocks:** Phase 18 (v3 is the third candidate in the eval).

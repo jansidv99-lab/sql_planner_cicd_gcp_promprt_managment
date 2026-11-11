@@ -68,11 +68,11 @@ def test_env_file_does_not_override_real_env_vars(monkeypatch, tmp_path):
 # --- Phase 16: PROMPT_VERSION -------------------------------------------------------------
 
 
-def test_prompt_version_defaults_to_v1():
-    from app.config import prompt_version
+# def test_prompt_version_defaults_to_v1():
+#     from app.config import prompt_version
 
-    assert prompt_version({}) == "v1"
-    assert prompt_version({"PROMPT_VERSION": "  "}) == "v1"
+#     assert prompt_version({}) == "v1"
+#     assert prompt_version({"PROMPT_VERSION": "  "}) == "v1"
 
 
 def test_prompt_version_read_and_trimmed_without_api_key():

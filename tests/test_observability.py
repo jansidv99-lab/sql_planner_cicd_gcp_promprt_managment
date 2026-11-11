@@ -291,3 +291,43 @@ def test_chain_log_entry_links_to_its_own_trace(monkeypatch, spans):
     root = _by_name(spans)["chain.run"]
     trace_id = format(root.context.trace_id, "032x")
     assert entry["logging.googleapis.com/trace"] == f"projects/demo-project/traces/{trace_id}"
+
+
+# --- Phase 16: prompt version + hash, never prompt text -------------------------------------
+
+
+def test_prompt_version_and_hashes_on_spans_and_log(spans, caplog):
+    from app.prompts import get_prompts, prompt_hash
+
+    caplog.set_level(logging.INFO, logger="app")
+    run(SECRET_REQUEST, COLS, llm=ScriptedLLM(OUTLINE, SQL), prompt_version="v2")
+    v2 = get_prompts("v2")
+    expected = {
+        "planner": prompt_hash(v2.planner_system(COLS)),
+        "coder": prompt_hash(v2.coder_system(COLS)),
+    }
+    named = _by_name(spans)
+    assert named["chain.run"].attributes["prompt.version"] == "v2"
+    assert named["planner"].attributes["prompt.hash"] == expected["planner"]
+    assert named["coder"].attributes["prompt.hash"] == expected["coder"]
+    fields = _chain_log(caplog).json_fields
+    assert fields["prompt_version"] == "v2"
+    assert fields["prompt_hashes"] == expected
+
+
+def test_privacy_no_prompt_text_in_logs_or_spans(spans, caplog):
+    from app.prompts import get_prompts
+
+    caplog.set_level(logging.DEBUG, logger="app")
+    run(SECRET_REQUEST, COLS, llm=ScriptedLLM(OUTLINE, SQL), prompt_version="v2")
+    telemetry = [
+        json.dumps(getattr(r, "json_fields", {}), default=str) + r.getMessage()
+        for r in caplog.records
+    ]
+    telemetry += [json.dumps(dict(s.attributes), default=str) for s in spans.get_finished_spans()]
+    blob = " ".join(telemetry)
+    v2 = get_prompts("v2")
+    for text in (v2.planner_system(COLS), v2.coder_system(COLS)):
+        for line in text.splitlines():
+            if len(line.strip()) > 12:  # every meaningful prompt line
+                assert line.strip() not in blob, line

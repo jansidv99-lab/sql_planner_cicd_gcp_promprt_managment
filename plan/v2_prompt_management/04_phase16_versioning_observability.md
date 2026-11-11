@@ -1,6 +1,15 @@
 # Phase 16 — Prompt versioning + observability (detailed plan)
 
-**Status:** PLANNED, awaiting review.
+**Status:** IN PROGRESS. Code done on `feature/prompt-versioning`; gate green (197 tests, 100 % coverage); v1 golden files unchanged; `check_templates()` → 10 files, versions v1, v2. Waiting on CI, merge and the CD check (production stays on v1).
+
+**Implementation notes (changes from the plan):**
+- Hints are computed **in the v2 template** from `types` (the sorted BigQuery types of the selected columns, from the new `schema.column_types()`). Every version gets `types`; v1 ignores it. The v1 `hints` slot from Phase 15 became `{% block hints %}`, the extension point v2 overrides.
+- The system prompts now depend on the selection (v2), so `prompt.hash` identifies the exact text **for that selection**.
+- An unknown version is checked in **one** place, `prompts.get_prompts()`. `config.prompt_version()` only reads the value. The chain turns `PromptVersionError` into `Status.CONFIG_ERROR` (no LLM calls), and the UI shows it as an error.
+- `ChainResult.prompt_version` carries the version to the UI caption.
+- `tests/conftest.py` pins `PROMPT_VERSION=v1`, so a local `.env` can't change test results.
+- `gcp_setup.sh` sets `PROMPT_VERSION=v1` **only if it's missing**, so re-running it never resets a promoted version. `cd.yml` falls back to `v1` when the variable is unset.
+- Extra test: for all 15 column selections, no v1/v2 prompt names an unselected column. It caught an alias example (`total_amount`) that mentioned `amount`, now `total_value`.
 **Part of:** [00_master_plan.md](00_master_plan.md) — prompt-engineering learning track
 **Depends on:** Phase 15 (partials and flag slots).
 **Unblocks:** Phase 17 (v3 extends v2), Phase 18 (the eval compares versions).

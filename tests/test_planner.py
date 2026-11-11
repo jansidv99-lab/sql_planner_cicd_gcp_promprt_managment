@@ -7,7 +7,7 @@ from app.planner import (
     PlannerError,
     make_plan,
 )
-from app.prompts import planner_system
+from app.prompts import get_prompts
 from app.schema import SchemaError
 
 OUTLINE = "1. Columns: product, amount\n2. Filters: none"
@@ -48,7 +48,7 @@ def test_request_wrapped_in_tags():
 def test_uses_planner_system_prompt():
     llm = FakeLLM()
     make_plan("x", ["product"], llm=llm)
-    assert llm.calls[0][0] == planner_system()
+    assert llm.calls[0][0] == get_prompts("v1").planner_system(["product"])
 
 
 @pytest.mark.parametrize(

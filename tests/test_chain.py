@@ -105,3 +105,37 @@ def test_unexpected_exception_propagates():
 
 def test_status_values_are_strings():
     assert Status.OK == "ok" and Status.REVIEW_FAILED.value == "review_failed"
+
+
+# --- Phase 16: prompt versions --------------------------------------------------------------
+
+
+def test_default_run_uses_v1_for_both_steps():
+    from app.prompts import get_prompts
+
+    llm = ScriptedLLM(OUTLINE, GOOD_SQL)
+    result = run("top 5 products by total sales", COLS, llm=llm)
+    v1 = get_prompts("v1")
+    assert result.prompt_version == "v1"
+    assert llm.calls[0][0] == v1.planner_system(COLS)
+    assert llm.calls[1][0] == v1.coder_system(COLS)
+
+
+def test_prompt_version_argument_overrides_env_for_both_steps():
+    from app.prompts import get_prompts
+
+    llm = ScriptedLLM(OUTLINE, GOOD_SQL)
+    result = run("top 5 products by total sales", COLS, llm=llm, prompt_version="v2")
+    v2 = get_prompts("v2")
+    assert result.status is Status.OK and result.prompt_version == "v2"
+    assert llm.calls[0][0] == v2.planner_system(COLS)
+    assert llm.calls[1][0] == v2.coder_system(COLS)
+
+
+def test_unknown_prompt_version_is_a_config_error_without_llm_calls(monkeypatch):
+    monkeypatch.setenv("PROMPT_VERSION", "v99")
+    llm = ScriptedLLM()
+    result = run("anything", COLS, llm=llm)
+    assert result.status is Status.CONFIG_ERROR
+    assert "v99" in result.message and result.prompt_version is None
+    assert llm.calls == []

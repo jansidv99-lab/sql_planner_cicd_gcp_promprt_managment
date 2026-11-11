@@ -5,21 +5,26 @@ Expected failures come back as a Status + friendly message, with any partial res
 
 Phase 12: each run is one trace (`chain.run` with child spans `planner`, `coder`, `reviewer`)
 and ends with one structured log line `chain finished`. Only metadata is recorded.
+
+Phase 16: one prompt version per run (both steps use the same one). The version and a hash of
+each rendered system prompt are recorded on the spans and in the log; never the prompt text.
 """
 
 from __future__ import annotations
 
 import logging
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 
 from opentelemetry import trace
 
+from app import config
 from app.coder import CoderError, write_sql
 from app.llm import LLMError, LLMFn, complete
 from app.observability import mark_error, span
 from app.planner import CannotAnswerError, PlannerError, make_plan
+from app.prompts import PromptSet, PromptVersionError, get_prompts, prompt_hash
 from app.reviewer import ReviewResult, review_sql
 from app.schema import SchemaError, validate_selection
 
@@ -34,6 +39,7 @@ class Status(str, Enum):
     INPUT_ERROR = "input_error"
     CODER_ERROR = "coder_error"
     LLM_ERROR = "llm_error"
+    CONFIG_ERROR = "config_error"  # Phase 16: unknown PROMPT_VERSION
 
 
 _LOG_LEVEL = {
@@ -43,6 +49,7 @@ _LOG_LEVEL = {
     Status.REVIEW_FAILED: logging.WARNING,
     Status.CODER_ERROR: logging.ERROR,
     Status.LLM_ERROR: logging.ERROR,
+    Status.CONFIG_ERROR: logging.ERROR,
 }
 
 
@@ -54,18 +61,30 @@ class ChainResult:
     outline: str | None = None  # Planner output
     sql: str | None = None  # Coder output, as returned
     review: ReviewResult | None = None  # Reviewer verdict (errors + formatted SQL)
+    prompt_version: str | None = None  # Phase 16: prompt version used (None if unknown)
 
     @property
     def passed(self) -> bool:
         return self.status is Status.OK
 
 
-def run(request: str, selected_columns: Iterable[str], llm: LLMFn = complete) -> ChainResult:
+def run(
+    request: str,
+    selected_columns: Iterable[str],
+    llm: LLMFn = complete,
+    prompt_version: str | None = None,
+) -> ChainResult:
+    """Run the chain once. `prompt_version` overrides PROMPT_VERSION (used by the eval)."""
     request_chars = len((request or "").strip())
     durations: dict[str, int] = {}
+    hashes: dict[str, str] = {}
+    version = prompt_version or config.prompt_version()
     with span(_tracer, "chain.run", request_chars=request_chars) as root:
+        root.set_attribute("prompt.version", version)
         try:
-            result, error_type = _run_steps(request, selected_columns, llm, durations)
+            result, error_type = _run_steps(
+                request, selected_columns, llm, durations, version, hashes
+            )
         except Exception as err:
             logger.exception(
                 "chain crashed",
@@ -89,6 +108,8 @@ def run(request: str, selected_columns: Iterable[str], llm: LLMFn = complete) ->
                     "columns": list(result.columns),
                     "review_error_count": len(result.review.errors) if result.review else None,
                     "duration_ms": durations,
+                    "prompt_version": version,
+                    "prompt_hashes": hashes,
                     **_meta(request_chars),
                 }
             },
@@ -101,9 +122,35 @@ def _meta(request_chars: int) -> dict:
 
 
 def _run_steps(
-    request: str, selected_columns: Iterable[str], llm: LLMFn, durations: dict[str, int]
+    request: str,
+    selected_columns: Iterable[str],
+    llm: LLMFn,
+    durations: dict[str, int],
+    version: str,
+    hashes: dict[str, str],
 ) -> tuple[ChainResult, str | None]:
-    """The chain logic (unchanged from Phase 6). Returns the result and the error type, if any."""
+    """The chain logic (Phase 6, plus one PromptSet per run since Phase 16).
+
+    Returns the result and the error type, if any.
+    """
+    try:
+        prompts = get_prompts(version)
+    except PromptVersionError as err:
+        return ChainResult(Status.CONFIG_ERROR, str(err)), type(err).__name__
+    result, error_type = _run_with_prompts(
+        request, selected_columns, llm, durations, prompts, hashes
+    )
+    return replace(result, prompt_version=prompts.version), error_type
+
+
+def _run_with_prompts(
+    request: str,
+    selected_columns: Iterable[str],
+    llm: LLMFn,
+    durations: dict[str, int],
+    prompts: PromptSet,
+    hashes: dict[str, str],
+) -> tuple[ChainResult, str | None]:
     # Validate the column selection first: no LLM call for a bad selection.
     try:
         columns = validate_selection(selected_columns)
@@ -112,8 +159,10 @@ def _run_steps(
 
     # [1] Planner
     try:
-        with span(_tracer, "planner", durations):
-            outline = make_plan(request, columns, llm)
+        with span(_tracer, "planner", durations) as current:
+            hashes["planner"] = prompt_hash(prompts.planner_system(columns))
+            current.set_attribute("prompt.hash", hashes["planner"])
+            outline = make_plan(request, columns, llm, prompts)
     except CannotAnswerError as err:  # subclass of PlannerError: check first
         return ChainResult(Status.CANNOT_ANSWER, str(err), columns), type(err).__name__
     except PlannerError as err:
@@ -123,8 +172,10 @@ def _run_steps(
 
     # [2] Coder
     try:
-        with span(_tracer, "coder", durations):
-            sql = write_sql(outline, columns, llm)
+        with span(_tracer, "coder", durations) as current:
+            hashes["coder"] = prompt_hash(prompts.coder_system(columns))
+            current.set_attribute("prompt.hash", hashes["coder"])
+            sql = write_sql(outline, columns, llm, prompts)
     except CoderError as err:
         return ChainResult(Status.CODER_ERROR, str(err), columns, outline), type(err).__name__
     except LLMError as err:

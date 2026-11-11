@@ -6,7 +6,7 @@ import re
 from collections.abc import Iterable
 
 from app.llm import LLMFn, complete
-from app.prompts import coder_system, coder_user_prompt
+from app.prompts import PromptSet, active_prompts
 from app.schema import schema_for_prompt
 
 # First fenced block: ``` or ```sql (any language tag), content captured lazily.
@@ -34,12 +34,22 @@ def extract_sql(reply: str) -> str:
     return sql
 
 
-def write_sql(outline: str, selected_columns: Iterable[str], llm: LLMFn = complete) -> str:
-    """Return SQL for the outline. Called once: no retries."""
+def write_sql(
+    outline: str,
+    selected_columns: Iterable[str],
+    llm: LLMFn = complete,
+    prompts: PromptSet | None = None,
+) -> str:
+    """Return SQL for the outline. Called once: no retries.
+
+    `prompts` picks the prompt version (default: this deployment's PROMPT_VERSION).
+    """
     outline = (outline or "").strip()
     if not outline:
         raise CoderError("No outline to write SQL from")
+    selected_columns = tuple(selected_columns)
     schema_block = schema_for_prompt(selected_columns)
+    prompts = prompts or active_prompts()
 
-    reply = llm(coder_system(), coder_user_prompt(schema_block, outline))
+    reply = llm(prompts.coder_system(selected_columns), prompts.coder_user(schema_block, outline))
     return extract_sql(reply)

@@ -1,4 +1,4 @@
-"""Load settings (OPENAI_API_KEY, OPENAI_BASE_URL, MODEL) from the environment."""
+"""Load settings (OPENAI_API_KEY, OPENAI_BASE_URL, MODEL, PROMPT_VERSION) from the environment."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from dotenv import load_dotenv
 
 REQUIRED_VARS = ("OPENAI_API_KEY", "OPENAI_BASE_URL", "MODEL")
+DEFAULT_PROMPT_VERSION = "v1"
 
 
 class ConfigError(RuntimeError):
@@ -44,3 +45,15 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         openai_base_url=values["OPENAI_BASE_URL"],
         model=values["MODEL"],
     )
+
+
+def prompt_version(env: Mapping[str, str] | None = None) -> str:
+    """The prompt version to use (PROMPT_VERSION, default v1). Phase 16.
+
+    Separate from load_settings() on purpose: reading it never needs the API key. Whether the
+    version exists is checked in one place, app.prompts.get_prompts().
+    """
+    if env is None:
+        load_dotenv(override=False)
+        env = os.environ
+    return (env.get("PROMPT_VERSION") or "").strip() or DEFAULT_PROMPT_VERSION

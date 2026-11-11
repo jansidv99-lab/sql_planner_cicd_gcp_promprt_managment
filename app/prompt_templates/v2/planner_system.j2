@@ -1,0 +1,18 @@
+{# Planner system prompt (v2) = v1 + type-aware hints (Phase 16).
+   Variables: as v1, plus types (BigQuery types of the SELECTED columns, e.g. ["DATE", "NUMERIC"]).
+   Only the `hints` block changes: hints appear only for column types the user selected. #}
+{% extends "v1/planner_system.j2" %}
+{% import "_partials/rules.j2" as r %}
+{% block hints %}
+{% set hints = [] %}
+{% if "DATE" in types %}
+{% set hints = hints + ["For time periods use DATE_TRUNC(<date column>, MONTH) or EXTRACT(YEAR FROM <date column>); write date literals as DATE 'YYYY-MM-DD'."] %}
+{% endif %}
+{% if "NUMERIC" in types %}
+{% set hints = hints + ["NUMERIC columns hold money: round aggregated money with ROUND(<expression>, 2)."] %}
+{% endif %}
+{% if "NUMERIC" in types or "INT64" in types %}
+{% set hints = hints + ["Give every aggregate a short snake_case alias (e.g. total_value) and use that alias in ORDER BY."] %}
+{% endif %}
+{{ r.hints_section(hints) }}
+{%- endblock %}

@@ -2,7 +2,7 @@ import pytest
 
 from app.coder import CoderError, extract_sql, write_sql
 from app.llm import LLMError
-from app.prompts import coder_system
+from app.prompts import get_prompts
 from app.schema import SchemaError
 
 OUTLINE = "1. Columns: product, amount\n3. Aggregations: SUM(amount) AS total_sales"
@@ -61,12 +61,12 @@ def test_outline_in_tags_and_coder_system_prompt():
     llm = FakeLLM()
     write_sql(OUTLINE, ["product", "amount"], llm=llm)
     ((system, user),) = llm.calls
-    assert system == coder_system()
+    assert system == get_prompts("v1").coder_system(["product", "amount"])
     assert f"<outline>\n{OUTLINE}\n</outline>" in user
 
 
 def test_system_prompt_rules():
-    system = coder_system()
+    system = get_prompts("v1").coder_system(["product", "amount"])
     assert "BigQuery" in system
     assert "SELECT *" in system and "Never" in system
 

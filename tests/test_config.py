@@ -63,3 +63,26 @@ def test_env_file_does_not_override_real_env_vars(monkeypatch, tmp_path):
     settings = load_settings()
     assert settings.model == "from-env"  # real env var wins
     assert settings.openai_base_url == "https://file.test/v1"  # missing ones come from .env
+
+
+# --- Phase 16: PROMPT_VERSION -------------------------------------------------------------
+
+
+def test_prompt_version_defaults_to_v1():
+    from app.config import prompt_version
+
+    assert prompt_version({}) == "v1"
+    assert prompt_version({"PROMPT_VERSION": "  "}) == "v1"
+
+
+def test_prompt_version_read_and_trimmed_without_api_key():
+    from app.config import prompt_version
+
+    assert prompt_version({"PROMPT_VERSION": " v2 "}) == "v2"  # no OPENAI_* needed
+
+
+def test_prompt_version_from_process_env(monkeypatch):
+    from app.config import prompt_version
+
+    monkeypatch.setenv("PROMPT_VERSION", "v2")
+    assert prompt_version() == "v2"

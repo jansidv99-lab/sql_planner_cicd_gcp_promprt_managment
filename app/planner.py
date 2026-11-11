@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from app.llm import LLMFn, complete
-from app.prompts import CANNOT_ANSWER_PREFIX, planner_system, planner_user_prompt
+from app.prompts import CANNOT_ANSWER_PREFIX, PromptSet, active_prompts
 from app.schema import schema_for_prompt
 
 MAX_REQUEST_CHARS = 1000
@@ -32,12 +32,23 @@ def validate_request(request: str) -> str:
     return request
 
 
-def make_plan(request: str, selected_columns: Iterable[str], llm: LLMFn = complete) -> str:
-    """Return the outline text. Input is validated before any LLM call."""
-    request = validate_request(request)
-    schema_block = schema_for_prompt(selected_columns)
+def make_plan(
+    request: str,
+    selected_columns: Iterable[str],
+    llm: LLMFn = complete,
+    prompts: PromptSet | None = None,
+) -> str:
+    """Return the outline text. Input is validated before any LLM call.
 
-    reply = llm(planner_system(), planner_user_prompt(schema_block, request)).strip()
+    `prompts` picks the prompt version (default: this deployment's PROMPT_VERSION).
+    """
+    request = validate_request(request)
+    selected_columns = tuple(selected_columns)
+    schema_block = schema_for_prompt(selected_columns)
+    prompts = prompts or active_prompts()
+
+    system = prompts.planner_system(selected_columns)
+    reply = llm(system, prompts.planner_user(schema_block, request)).strip()
 
     if reply.upper().startswith(CANNOT_ANSWER_PREFIX):
         raise CannotAnswerError(reply[len(CANNOT_ANSWER_PREFIX) :].strip() or "no reason given")

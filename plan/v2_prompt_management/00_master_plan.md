@@ -1,6 +1,6 @@
 # SQL Script Generator v2 (prompt management) — Master Plan
 
-**Status:** Phase 13 DONE (2026-11-11). Prompt-engineering track: Phase 14 ✅, Phases 15–19 planned. Live app: https://sql-planner-pm-309866353676.asia-south1.run.app
+**Status:** Phase 13 DONE (2026-11-11). Prompt-engineering track: Phases 14–15 ✅, Phases 16–19 planned. Live app: https://sql-planner-pm-309866353676.asia-south1.run.app
 
 This folder holds **all planning for the new development** in the cloned repo
 `jansidv99-lab/sql_planner_cicd_gcp_promprt_managment`. The baseline (Phases 0–12) is documented
@@ -11,7 +11,7 @@ history and not edited**. New phases continue the numbering from Phase 13.
 |---|---|---|
 | 13 Separate GCP resources for this repo | `01_phase13_separate_gcp_resources.md` | ✅ PR #1 (+ docs PR #2); 141 tests, 100 % coverage; old app verified unchanged |
 | 14 Jinja2 foundations | `02_phase14_jinja2_foundations.md` | ✅ PR #4; prompts byte-identical (golden tests), verified in production |
-| 15 Template features (partials, macros, loops, filters) | `03_phase15_template_features.md` | 🚧 code done, PR pending |
+| 15 Template features (partials, macros, loops, filters) | `03_phase15_template_features.md` | ✅ PR #6; prompts byte-identical, verified in production |
 | 16 Prompt versioning + observability | `04_phase16_versioning_observability.md` | 📝 planned |
 | 17 Few-shot examples | `05_phase17_few_shot_examples.md` | 📝 planned |
 | 18 Evaluation harness (local only) | `06_phase18_evaluation_harness.md` | 📝 planned |

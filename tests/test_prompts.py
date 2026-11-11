@@ -10,7 +10,8 @@ import pytest
 from jinja2 import UndefinedError
 
 from app import prompts
-from app.schema import COLUMN_NAMES, schema_for_prompt
+from app.reviewer import review_sql
+from app.schema import COLUMN_NAMES, schema_for_prompt, validate_selection
 
 GOLDEN = Path(__file__).parent / "golden" / "v1"
 
@@ -173,7 +174,7 @@ def test_v2_planner_hints_follow_selected_column_types(columns, present, absent)
 @pytest.mark.parametrize("columns", ALL_SUBSETS)
 def test_no_prompt_names_an_unselected_column(columns):
     unselected = [c for c in COLUMN_NAMES if c not in columns]
-    for p in (V1, V2):
+    for p in (prompts.get_prompts(v) for v in prompts.available_versions()):
         schema = schema_for_prompt(columns)
         texts = (p.planner_system(columns), p.coder_system(columns), p.planner_user(schema, "x"))
         for text in texts:
@@ -182,8 +183,8 @@ def test_no_prompt_names_an_unselected_column(columns):
 
 
 def test_available_versions_and_unknown_version():
-    assert prompts.available_versions()[:2] == ("v1", "v2")
-    with pytest.raises(prompts.PromptVersionError, match="v9.*available: v1, v2"):
+    assert prompts.available_versions()[:3] == ("v1", "v2", "v3")
+    with pytest.raises(prompts.PromptVersionError, match="v9.*available: v1, v2, v3"):
         prompts.get_prompts("v9")
 
 
@@ -200,3 +201,85 @@ def test_prompt_hash_is_short_stable_and_sensitive():
     assert prompts.prompt_hash(V1.planner_system(COLUMN_NAMES)) != prompts.prompt_hash(
         V2.planner_system(COLUMN_NAMES)
     )
+
+
+# --- Phase 17: few-shot examples (v3). Examples are code: they are validated like code. ----
+
+
+V3 = prompts.get_prompts("v3")
+EXAMPLES = prompts.load_examples()
+SECTIONS = ("Columns", "Filters", "Aggregations", "Grouping", "Ordering", "Limit")
+
+
+@pytest.mark.parametrize("name", ["planner_system", "coder_system"])
+def test_v3_matches_golden(name):
+    expected = (GOLDEN.parent / "v3" / f"{name}.txt").read_bytes().decode("utf-8")
+    assert getattr(V3, name)(COLUMN_NAMES) == expected
+
+
+def test_example_ids_unique_and_columns_valid():
+    ids = [ex.id for ex in EXAMPLES]
+    assert len(ids) == len(set(ids))
+    for ex in EXAMPLES:
+        assert validate_selection(ex.columns) == tuple(c for c in COLUMN_NAMES if c in ex.columns)
+
+
+@pytest.mark.parametrize("ex", [e for e in EXAMPLES if e.sql], ids=lambda e: e.id)
+def test_example_sql_passes_the_reviewer_with_its_own_columns(ex):
+    result = review_sql(ex.sql, ex.columns)
+    assert result.passed, result.errors
+
+
+@pytest.mark.parametrize("ex", [e for e in EXAMPLES if e.sql], ids=lambda e: e.id)
+def test_example_outline_has_the_six_sections_in_order(ex):
+    lines = ex.outline.splitlines()
+    assert [line.split(":")[0] for line in lines] == [
+        f"{i}. {s}" for i, s in enumerate(SECTIONS, 1)
+    ]
+
+
+def test_refusal_examples_use_the_prefix_and_have_no_sql():
+    refusals = [e for e in EXAMPLES if e.sql is None]
+    assert refusals, "keep at least one refusal example"
+    for ex in refusals:
+        assert ex.outline.startswith(prompts.CANNOT_ANSWER_PREFIX)
+
+
+@pytest.mark.parametrize("ex", EXAMPLES, ids=lambda e: e.id)
+def test_example_text_mentions_only_its_own_columns(ex):
+    text = " ".join([ex.request, ex.outline, ex.sql or ""])
+    for column in COLUMN_NAMES:
+        if column not in ex.columns:
+            assert column not in text
+
+
+@pytest.mark.parametrize("columns", ALL_SUBSETS)
+def test_selection_uses_only_selected_columns_and_is_capped(columns):
+    for with_sql in (False, True):
+        chosen = prompts.select_examples(columns, with_sql=with_sql)
+        assert len(chosen) <= prompts.MAX_EXAMPLES
+        for ex in chosen:
+            assert set(ex.columns) <= set(columns)
+            assert ex.sql is not None or not with_sql
+
+
+def test_selection_is_deterministic_in_file_order():
+    first = prompts.select_examples(COLUMN_NAMES)
+    assert first == prompts.select_examples(list(reversed(COLUMN_NAMES)))
+    order = [ex.id for ex in EXAMPLES]
+    assert [ex.id for ex in first] == sorted((ex.id for ex in first), key=order.index)
+
+
+def test_v3_is_v2_plus_examples_and_falls_back_to_v2_without_matches():
+    for name in ("planner_system", "coder_system"):
+        v2_text, v3_text = getattr(V2, name)(COLUMN_NAMES), getattr(V3, name)(COLUMN_NAMES)
+        assert v3_text.startswith(v2_text + "\n\nExamples (illustrations only")
+        assert v3_text.count("<example>") == prompts.MAX_EXAMPLES
+    # order_date alone matches no example: v3 renders exactly like v2
+    assert V3.planner_system(["order_date"]) == V2.planner_system(["order_date"])
+    assert V3.coder_system(["order_date"]) == V2.coder_system(["order_date"])
+
+
+def test_coder_examples_never_include_a_refusal():
+    assert prompts.CANNOT_ANSWER_PREFIX not in V3.coder_system(COLUMN_NAMES)
+    assert prompts.CANNOT_ANSWER_PREFIX not in V3.coder_system(["product"])

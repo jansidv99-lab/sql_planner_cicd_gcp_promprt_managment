@@ -13,7 +13,7 @@ history and not edited**. New phases continue the numbering from Phase 13.
 | 14 Jinja2 foundations | `02_phase14_jinja2_foundations.md` | ✅ PR #4; prompts byte-identical (golden tests), verified in production |
 | 15 Template features (partials, macros, loops, filters) | `03_phase15_template_features.md` | ✅ PR #6; prompts byte-identical, verified in production |
 | 16 Prompt versioning + observability | `04_phase16_versioning_observability.md` | ✅ PR #8; production on v1, version + hash verified in log and trace |
-| 17 Few-shot examples | `05_phase17_few_shot_examples.md` | 📝 planned |
+| 17 Few-shot examples | `05_phase17_few_shot_examples.md` | 🚧 code done, PR pending |
 | 18 Evaluation harness (local only) | `06_phase18_evaluation_harness.md` | 📝 planned |
 | 19 Promote best version + wrap up | `07_phase19_promote_and_wrap_up.md` | 📝 planned |
 

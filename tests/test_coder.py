@@ -2,7 +2,7 @@ import pytest
 
 from app.coder import CoderError, extract_sql, write_sql
 from app.llm import LLMError
-from app.prompts import CODER_SYSTEM
+from app.prompts import coder_system
 from app.schema import SchemaError
 
 OUTLINE = "1. Columns: product, amount\n3. Aggregations: SUM(amount) AS total_sales"
@@ -61,13 +61,14 @@ def test_outline_in_tags_and_coder_system_prompt():
     llm = FakeLLM()
     write_sql(OUTLINE, ["product", "amount"], llm=llm)
     ((system, user),) = llm.calls
-    assert system == CODER_SYSTEM
+    assert system == coder_system()
     assert f"<outline>\n{OUTLINE}\n</outline>" in user
 
 
 def test_system_prompt_rules():
-    assert "BigQuery" in CODER_SYSTEM
-    assert "SELECT *" in CODER_SYSTEM and "Never" in CODER_SYSTEM
+    system = coder_system()
+    assert "BigQuery" in system
+    assert "SELECT *" in system and "Never" in system
 
 
 @pytest.mark.parametrize("outline", ["", "   ", None])

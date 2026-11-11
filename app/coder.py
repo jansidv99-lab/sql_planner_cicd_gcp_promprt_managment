@@ -6,7 +6,7 @@ import re
 from collections.abc import Iterable
 
 from app.llm import LLMFn, complete
-from app.prompts import CODER_SYSTEM, coder_user_prompt
+from app.prompts import coder_system, coder_user_prompt
 from app.schema import schema_for_prompt
 
 # First fenced block: ``` or ```sql (any language tag), content captured lazily.
@@ -41,5 +41,5 @@ def write_sql(outline: str, selected_columns: Iterable[str], llm: LLMFn = comple
         raise CoderError("No outline to write SQL from")
     schema_block = schema_for_prompt(selected_columns)
 
-    reply = llm(CODER_SYSTEM, coder_user_prompt(schema_block, outline))
+    reply = llm(coder_system(), coder_user_prompt(schema_block, outline))
     return extract_sql(reply)

@@ -89,7 +89,7 @@ jobs:
           OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
           MODEL: ${{ vars.MODEL }}
           # Phase 16: prompt version for this deploy (repo variable; v1 if unset).
-          PROMPT_VERSION: ${{ vars.PROMPT_VERSION || 'v1' }}
+          PROMPT_VERSION: ${{ vars.PROMPT_VERSION || 'v3' }}
         run: |
           gcloud run deploy "${SERVICE}" \
             --project "${PROJECT_ID}" --region "${REGION}" \

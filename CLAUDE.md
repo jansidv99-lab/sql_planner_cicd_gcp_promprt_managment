@@ -19,8 +19,8 @@ Python 3.11, with dependencies pinned in `requirements*.txt`.
 - `app/schema.py` is the single source of truth for the `sales` table; `validate_selection` and
   `schema_for_prompt` (only the selected columns) are used by every step.
 - `app/planner.py` / `app/coder.py` call the LLM through an injected `llm: LLMFn` (default
-  `app.llm.complete`); tests pass fakes, so no test hits the real API. All prompt text is in
-  `app/prompts.py`. The Planner can stop early with `CANNOT_ANSWER:`.
+  `app.llm.complete`); tests pass fakes, so no test hits the real API. Prompt text lives in Jinja2
+  templates (see "Prompt templates and versions"). The Planner can stop early with `CANNOT_ANSWER:`.
 - `app/reviewer.py` is the deterministic gate (sqlglot, BigQuery dialect, no LLM): one statement,
   read-only, only `sales` (or CTEs), no `*` except `COUNT(*)`, only selected columns or query aliases.
 - `app/chain.py` turns expected errors into a `ChainResult.status` + message (keeping partial
@@ -41,6 +41,9 @@ pytest                                        # all tests (LLM is faked; no API 
 pytest tests/test_schema.py::test_name        # a single test
 streamlit run streamlit_app.py                # run the UI
 python -m app.llm                             # one real LLM smoke call (costs a request)
+python -m evals.run --versions v1 v2 v3       # prompt eval dry run: prints planned LLM calls only
+python -m evals.run --versions v1 v3 --cases id1,id2 --repeat 2 --yes   # real eval (costs requests)
+python -m evals.run --rescore evals/results/<file>.json                 # re-score saved run, no LLM
 ```
 
 Quality gate (CI runs exactly this; all must pass):
@@ -93,6 +96,35 @@ values); mount it read-only instead and let python-dotenv parse it. The image co
   private service it gets 403.
 - Rollback: `gcloud run services update-traffic sql-planner-pm --region asia-south1
   --to-revisions <previous-revision>=100`, or re-run CD from the Actions tab.
+
+## Prompt templates and versions (Phases 14–18)
+
+- Templates: `app/prompt_templates/<vN>/{planner,coder}_{system,user}.j2`, plus shared
+  `_partials/` (`schema.j2`, `rules.j2` macros) and `examples.json` (few-shot examples).
+  `app/prompts.py` only renders them: `StrictUndefined` (a missing variable raises), no autoescape,
+  a `tag` filter for `<request>`/`<outline>` blocks. User text and the outline are passed as
+  **variables**, never compiled as templates (no template injection).
+- Versions are folders matched by `v\d+` and found automatically. Later versions `{% extends %}`
+  earlier ones and override blocks: v2 adds type-aware hints, v3 few-shot examples, v4 explicit
+  refusal (in progress). **Never edit a released version**: put changes in a new folder, so
+  version + hash always identify the exact text.
+- Golden files `tests/golden/<vN>/*.txt` pin the rendered prompts byte for byte
+  (`tests/test_prompts.py`, with all columns and a fixed request/outline). A new version needs its
+  own golden files and tests showing how it differs from the version it extends.
+- Few-shot selection: only examples whose columns are **all** selected (so a prompt never names
+  an unselected column), first 3 in file order; Coder prompts skip refusal examples. Tests
+  require every example's SQL to pass the Reviewer.
+- Active version: `PROMPT_VERSION` (default `v1`, read by `config.prompt_version()`, which doesn't
+  need the API key). In production it is the GitHub repo variable `PROMPT_VERSION`, which CD
+  passes to Cloud Run. If the version is unknown, the chain returns `Status.CONFIG_ERROR`.
+  `chain.run(..., prompt_version=...)` overrides it (used by the eval).
+- `prompt.version` (on `chain.run`) and `prompt.hash` (sha256, 12 hex chars, on `planner`/`coder`)
+  are recorded instead of the prompt text. The CI `docker` job runs `check_templates()` inside the
+  image, so a template missing from the image fails CI.
+- `evals/` is **local only** (real LLM; CI needs no secrets). `dataset.json` cases describe
+  expected SQL properties (`group_by:`, `agg:`, `func:`, `filter:`, `order:`, `limit:`, with
+  `a|b` alternatives), scored deterministically on the sqlglot AST by `evals/scoring.py`. Results
+  are saved to `evals/results/` (gitignored). Without `--yes`, `evals.run` makes no LLM calls.
 
 ## Logging and tracing (Phase 12)
 

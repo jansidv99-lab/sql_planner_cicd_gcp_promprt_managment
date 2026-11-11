@@ -283,3 +283,28 @@ def test_v3_is_v2_plus_examples_and_falls_back_to_v2_without_matches():
 def test_coder_examples_never_include_a_refusal():
     assert prompts.CANNOT_ANSWER_PREFIX not in V3.coder_system(COLUMN_NAMES)
     assert prompts.CANNOT_ANSWER_PREFIX not in V3.coder_system(["product"])
+
+
+# --- Phase 18b: v4 = v2 + one explicit "refuse, don't substitute" hint ----------------------
+
+V4 = prompts.get_prompts("v4")
+REFUSE_HINT = (
+    "- If answering needs information that none of the listed columns holds, reply with the "
+    f"{prompts.CANNOT_ANSWER_PREFIX} line. Never answer a different, easier question instead "
+    "(for example returning only names when totals were asked for)."
+)
+
+
+def test_v4_matches_golden():
+    expected = (GOLDEN.parent / "v4" / "planner_system.txt").read_bytes().decode("utf-8")
+    assert V4.planner_system(COLUMN_NAMES) == expected
+
+
+@pytest.mark.parametrize("columns", ALL_SUBSETS)
+def test_v4_is_v2_plus_exactly_one_hint_for_every_selection(columns):
+    v2_text, v4_text = V2.planner_system(columns), V4.planner_system(columns)
+    if "\n\nHints:\n" in v2_text:  # v2 has hints: v4 appends one bullet (super())
+        assert v4_text == v2_text + "\n" + REFUSE_HINT
+    else:  # v2 has no hints: v4 adds a Hints section with just this one
+        assert v4_text == v2_text + "\n\nHints:\n" + REFUSE_HINT
+    assert V4.coder_system(columns) == V2.coder_system(columns)

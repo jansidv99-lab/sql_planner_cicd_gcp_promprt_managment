@@ -79,11 +79,21 @@ def test_tracing_off_by_default():
 
 
 @pytest.mark.parametrize(
-    ("name", "value"), [("K_SERVICE", "sql-planner"), ("TRACING_ENABLED", "true")]
+    ("name", "value"), [("K_SERVICE", "sql-planner-pm"), ("TRACING_ENABLED", "true")]
 )
 def test_tracing_enabled_on_cloud_run_or_flag(monkeypatch, name, value):
     monkeypatch.setenv(name, value)
     assert observability.tracing_enabled() is True
+
+
+def test_service_name_defaults_to_this_app(monkeypatch):
+    monkeypatch.delenv("K_SERVICE", raising=False)
+    assert observability.service_name() == "sql-planner-pm"
+
+
+def test_service_name_follows_cloud_run_service(monkeypatch):
+    monkeypatch.setenv("K_SERVICE", "some-other-service")
+    assert observability.service_name() == "some-other-service"
 
 
 def test_setup_tracing_installs_cloud_trace_exporter_sampling_every_run(monkeypatch):
@@ -111,14 +121,14 @@ def test_setup_tracing_installs_cloud_trace_exporter_sampling_every_run(monkeypa
     assert observability.setup_tracing() is True  # idempotent: second call doesn't reinstall
     provider = installed["p"]
     assert provider.sampler.get_description() == "AlwaysOnSampler"
-    assert provider.resource.attributes["service.name"] == "sql-planner"
+    assert provider.resource.attributes["service.name"] == "sql-planner-pm"
     assert installed["proc"].exp == ("exporter", "demo-project")
 
 
 def test_project_id_from_metadata_on_cloud_run(monkeypatch):
     import google.auth
 
-    monkeypatch.setenv("K_SERVICE", "sql-planner")
+    monkeypatch.setenv("K_SERVICE", "sql-planner-pm")
     monkeypatch.setattr(google.auth, "default", lambda: (None, "meta-project"))
     assert observability.project_id() == "meta-project"
 
@@ -130,7 +140,7 @@ def test_project_id_none_when_unavailable(monkeypatch):
     def fail():
         raise DefaultCredentialsError("no creds")
 
-    monkeypatch.setenv("K_SERVICE", "sql-planner")
+    monkeypatch.setenv("K_SERVICE", "sql-planner-pm")
     monkeypatch.setattr(google.auth, "default", fail)
     assert observability.project_id() is None  # logs still work, without trace links
 

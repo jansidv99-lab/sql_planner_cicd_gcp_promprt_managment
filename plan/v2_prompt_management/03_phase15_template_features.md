@@ -1,6 +1,6 @@
 # Phase 15 — Template features: partials, macros, loops, filters (detailed plan)
 
-**Status:** IN PROGRESS. Code done on `refactor/prompt-partials-macros`; gate green (162 tests, 100 % coverage); golden files unchanged. Waiting on CI, merge and the CD check.
+**Status:** DONE (2026-11-11). PR #6 (squash `0eecde6`; an accidental Git Bash `sh.exe.stackdump` was removed before merge and `*.stackdump` added to `.gitignore`). Gate: 162 tests, 100 % coverage; golden files unchanged. CD deployed `sql-planner-pm-00007-rll`; a UI request logged `chain finished` status ok, 0 review errors, trace `ad692c53…` (chain.run → planner/coder → llm.complete, reviewer).
 
 **Changes from the plan (made during implementation):**
 - Continuation lines use Jinja's **built-in** `indent` filter (it already skips the first line), so no custom `indent_lines` filter is needed.

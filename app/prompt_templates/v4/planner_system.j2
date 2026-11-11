@@ -1,0 +1,15 @@
+{# Planner system prompt (v4) = v2 + one explicit "refuse, don't substitute" hint (Phase 18b).
+   Variables: as v2. `super()` keeps v2's hints; the new hint is always added.
+   The wording must not name a schema column (no unselected column may appear in a prompt). #}
+{% extends "v2/planner_system.j2" %}
+{% import "_partials/rules.j2" as r %}
+{% block hints %}
+{% set refuse = "If answering needs information that none of the listed columns holds, reply with the " ~ cannot_answer_prefix ~ " line. Never answer a different, easier question instead (for example returning only names when totals were asked for)." %}
+{% set base = super() %}
+{% if base %}
+{{ base }}
+- {{ refuse }}
+{%- else %}
+{{ r.hints_section([refuse]) }}
+{%- endif %}
+{%- endblock %}

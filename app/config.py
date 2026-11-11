@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from dotenv import load_dotenv
 
 REQUIRED_VARS = ("OPENAI_API_KEY", "OPENAI_BASE_URL", "MODEL")
-DEFAULT_PROMPT_VERSION = "v1"
+DEFAULT_PROMPT_VERSION = "v3"
 
 
 class ConfigError(RuntimeError):

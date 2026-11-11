@@ -1,6 +1,6 @@
 # Phase 13 — Separate GCP resources for this repo (detailed plan)
 
-**Status:** IN PROGRESS. Code steps 13.1–13.5 and 13.8 are done on the branch (gate green: 141 tests, 100 % coverage; the guard was tested and refuses `github-pool`). Waiting on 13.6 (GCP setup, run by the owner) and 13.7 (first deploy).
+**Status:** DONE (2026-11-11). Setup script run (all new resources created); PR #1 merged; first CD run deployed `sql-planner-pm-00001` with the expected 403 on the smoke check; service made public; manual CD re-run deployed `sql-planner-pm-00002-8gk`, all green. Verified in production: a UI request logged `chain finished` (status ok, no request text, labels `app=sql-planner-pm`), linked to trace `fbc55f48…` with spans chain.run → planner/coder (→ llm.complete) / reviewer. Old app compared before/after setup and after deploy: revision `sql-planner-00007-2c8` and all its IAM policies unchanged (only the new pool appears in the pool list). URL: https://sql-planner-pm-309866353676.asia-south1.run.app
 **Part of:** [00_master_plan.md](00_master_plan.md)
 **Depends on:** baseline Phases 0–12 (code, CI, CD, logging), all inherited from the cloned repo.
 **Unblocks:** every later v2 phase (each one needs a deploy target that is safe to change).

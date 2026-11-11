@@ -5,9 +5,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project status
 
 This repo is a **clone** of `jansidv99-lab/sql_planner_cicd_gcp` (baseline Phases 0–12, live as
-Cloud Run service `sql-planner`; plans in `plan/00_master_plan.md` … `plan/13_*.md`, kept as
+Cloud Run service `sql-planner`; plans in `plan/v1_app_development_phase/` (`00_master_plan.md` … `13_*.md`), kept as
 history). New development ("v2", from Phase 13) deploys a **separate** app, `sql-planner-pm`,
-with its own GCP resources. All new plan docs go in `plan/v2_prompt_management/` (status table:
+with its own GCP resources (public: https://sql-planner-pm-309866353676.asia-south1.run.app).
+All new plan docs go in `plan/v2_prompt_management/` (status table:
 `plan/v2_prompt_management/00_master_plan.md`); don't edit the baseline plan files.
 Python 3.11, with dependencies pinned in `requirements*.txt`.
 

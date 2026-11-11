@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # One-time GCP + GitHub setup for CD to Cloud Run   (Phase 11, Part A; Phase 13)
-# Plans: plan/12_phase11_cd.md, plan/v2_prompt_management/01_phase13_separate_gcp_resources.md
+# Plans: plan/v1_app_development_phase/12_phase11_cd.md, plan/v2_prompt_management/01_phase13_separate_gcp_resources.md
 # =============================================================================
 # Creates DEDICATED resources for the sql-planner-pm app (this repo), including
 # its own Workload Identity pool. Nothing belonging to other apps in the same GCP

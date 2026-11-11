@@ -1,15 +1,15 @@
 # SQL Script Generator v2 (prompt management) — Master Plan
 
-**Status:** Phase 13 code done on branch `feature/separate-gcp-resources`; GCP setup + first deploy pending (2026-11-11).
+**Status:** Phase 13 DONE (2026-11-11). Live app: https://sql-planner-pm-309866353676.asia-south1.run.app
 
 This folder holds **all planning for the new development** in the cloned repo
 `jansidv99-lab/sql_planner_cicd_gcp_promprt_managment`. The baseline (Phases 0–12) is documented
-in `plan/00_master_plan.md` … `plan/13_phase12_logging_tracing.md`. Those files are **kept as
+in `plan/v1_app_development_phase/` (`00_master_plan.md` … `13_phase12_logging_tracing.md`). Those files are **kept as
 history and not edited**. New phases continue the numbering from Phase 13.
 
 | Phase | Plan doc | Result |
 |---|---|---|
-| 13 Separate GCP resources for this repo | `01_phase13_separate_gcp_resources.md` | 🚧 13.1–13.5, 13.8 done (gate: 141 tests, 100 % coverage); 13.6–13.7 pending |
+| 13 Separate GCP resources for this repo | `01_phase13_separate_gcp_resources.md` | ✅ PR #1 (+ docs PR #2); 141 tests, 100 % coverage; old app verified unchanged |
 
 ---
 

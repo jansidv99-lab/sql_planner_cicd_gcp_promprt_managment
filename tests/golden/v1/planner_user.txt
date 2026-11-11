@@ -1,0 +1,10 @@
+Table: sales
+Columns (use ONLY these; no other tables or columns exist):
+- order_date DATE -- Date the order was placed
+- quantity INT64 -- Number of units ordered
+- product STRING -- Product name
+- amount NUMERIC -- Order value (currency)
+
+<request>
+Total amount per product, highest first
+</request>

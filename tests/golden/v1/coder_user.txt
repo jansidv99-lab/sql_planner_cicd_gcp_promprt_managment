@@ -1,0 +1,15 @@
+Table: sales
+Columns (use ONLY these; no other tables or columns exist):
+- order_date DATE -- Date the order was placed
+- quantity INT64 -- Number of units ordered
+- product STRING -- Product name
+- amount NUMERIC -- Order value (currency)
+
+<outline>
+1. Columns: product
+2. Filters: none
+3. Aggregations: SUM(amount) AS total_amount
+4. Grouping: product
+5. Ordering: total_amount DESC
+6. Limit: none
+</outline>

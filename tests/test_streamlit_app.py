@@ -113,3 +113,19 @@ def test_submit_passes_inputs_to_chain_once(fake_chain):
     request, columns = fake_chain.calls[0]
     assert request == "monthly totals"
     assert sorted(columns) == ["amount", "order_date"]
+
+
+# --- Phase 16: prompt version caption ------------------------------------------------------
+
+
+def test_prompt_version_caption_shown(fake_chain):
+    review = ReviewResult(True, [], FORMATTED)
+    result = ChainResult(Status.OK, None, COLS, OUTLINE, SQL, review, prompt_version="v2")
+    at = _submit(result, fake_chain)
+    assert any("Prompt version: v2" in c.value for c in at.caption)
+
+
+def test_config_error_shown(fake_chain):
+    at = _submit(ChainResult(Status.CONFIG_ERROR, "Unknown prompt version 'v9'"), fake_chain)
+    assert "Unknown prompt version" in at.error[0].value
+    assert not any("Prompt version:" in c.value for c in at.caption)

@@ -1,0 +1,14 @@
+{# Coder system prompt (v2) = v1 + type-aware hints (Phase 16).
+   Variables: as v1, plus types (BigQuery types of the SELECTED columns). #}
+{% extends "v1/coder_system.j2" %}
+{% import "_partials/rules.j2" as r %}
+{% block hints %}
+{% set hints = ["Use exactly the aliases named in the outline."] %}
+{% if "DATE" in types %}
+{% set hints = hints + ["Write date literals as DATE 'YYYY-MM-DD'; keep DATE_TRUNC / EXTRACT exactly as the outline says."] %}
+{% endif %}
+{% if "NUMERIC" in types %}
+{% set hints = hints + ["Keep ROUND(<expression>, 2) wherever the outline rounds money."] %}
+{% endif %}
+{{ r.hints_section(hints) }}
+{%- endblock %}

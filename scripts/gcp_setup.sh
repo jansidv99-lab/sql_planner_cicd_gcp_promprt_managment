@@ -152,6 +152,9 @@ setvar DEPLOYER_SA "$DEPLOYER_SA"
 setvar RUNTIME_SA "$RUNTIME_SA"
 setvar OPENAI_BASE_URL "$(env_get OPENAI_BASE_URL)"
 setvar MODEL "$(env_get MODEL)"
+# Phase 16: prompt version deployed by CD (switch versions by changing this, then re-run CD).
+# Only set when missing, so re-running the script never resets a promoted version.
+gh variable get PROMPT_VERSION --repo "$GITHUB_REPO" >/dev/null 2>&1 || setvar PROMPT_VERSION v1
 
 # --- 12.7 Runtime SA may write traces (Phase 12) ------------------------------
 # roles/cloudtrace.agent can only WRITE trace data. Logs need no role: Cloud Run

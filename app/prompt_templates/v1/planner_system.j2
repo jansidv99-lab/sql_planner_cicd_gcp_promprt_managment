@@ -1,5 +1,6 @@
 {# Planner system prompt (v1).
-   Variables: cannot_answer_prefix; optional hints (list of strings, not used by v1). #}
+   Variables: cannot_answer_prefix; optional hints (list of strings, not used by v1).
+   Block `hints` is the extension point that later versions override (Phase 16). #}
 {% import "_partials/rules.j2" as r %}
 {% set output_format %}
 Reply with exactly these 6 numbered sections and nothing else (no SQL, no extra text).
@@ -23,4 +24,4 @@ You plan a single read-only BigQuery SELECT query on one table.
 
 Rules:
 {{ r.numbered_rules([r.schema_only(), output_format, cannot_answer, guard]) }}
-{{- r.hints_section(hints | default([])) }}
+{%- block hints %}{{ r.hints_section(hints | default([])) }}{% endblock %}

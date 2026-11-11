@@ -48,6 +48,11 @@ def validate_selection(columns: Iterable[str]) -> tuple[str, ...]:
     return tuple(name for name in COLUMN_NAMES if name in selected)
 
 
+def column_types(columns: Iterable[str]) -> list[str]:
+    """Sorted, de-duplicated BigQuery types of a valid column selection (used by prompt hints)."""
+    return sorted({_BY_NAME[name].sql_type for name in validate_selection(columns)})
+
+
 def schema_for_prompt(columns: Iterable[str]) -> str:
     """Describe the table with only the selected columns, for the Planner and Coder prompts.
 

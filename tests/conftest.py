@@ -34,6 +34,8 @@ def _isolate_observability(monkeypatch):
     """Keep tracing off (no Cloud Run env) and undo any logging setup after each test."""
     for name in ("K_SERVICE", "TRACING_ENABLED", "GOOGLE_CLOUD_PROJECT", "LOG_LEVEL"):
         monkeypatch.delenv(name, raising=False)
+    # Phase 16: a PROMPT_VERSION in a local .env must not change test results.
+    monkeypatch.setenv("PROMPT_VERSION", "v1")
     yield
     logger = logging.getLogger("app")
     for handler in [h for h in logger.handlers if getattr(h, "_sql_planner", False)]:

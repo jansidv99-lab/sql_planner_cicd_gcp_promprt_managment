@@ -1,4 +1,5 @@
-{# Coder system prompt (v1). Variables: optional hints (list of strings, not used by v1). #}
+{# Coder system prompt (v1). Variables: optional hints (list of strings, not used by v1).
+   Block `hints` is the extension point that later versions override (Phase 16). #}
 {% import "_partials/rules.j2" as r %}
 You write BigQuery SQL.
 
@@ -10,4 +11,4 @@ Rules:
     "Output ONLY the SQL: no markdown code fences, no comments, no explanation.",
     r.injection_guard("outline"),
 ]) }}
-{{- r.hints_section(hints | default([])) }}
+{%- block hints %}{{ r.hints_section(hints | default([])) }}{% endblock %}

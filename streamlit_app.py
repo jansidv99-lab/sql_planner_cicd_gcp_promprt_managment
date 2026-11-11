@@ -98,9 +98,11 @@ def render(result: ChainResult) -> None:
         st.warning(f"⚠️ {result.message}. Try selecting more columns.")
     elif result.status is Status.INPUT_ERROR:
         st.warning(f"⚠️ {result.message}")
-    else:  # CODER_ERROR, LLM_ERROR
+    else:  # CODER_ERROR, LLM_ERROR, CONFIG_ERROR
         st.error(f"❌ {result.message}")
         _show_plan(result)
+    if result.prompt_version:  # Phase 16: which prompt version produced this result
+        st.caption(f"Prompt version: {result.prompt_version}")
 
 
 if "result" in st.session_state:

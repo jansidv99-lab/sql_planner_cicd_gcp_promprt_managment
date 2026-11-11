@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from app.llm import LLMFn, complete
-from app.prompts import CANNOT_ANSWER_PREFIX, PLANNER_SYSTEM, planner_user_prompt
+from app.prompts import CANNOT_ANSWER_PREFIX, planner_system, planner_user_prompt
 from app.schema import schema_for_prompt
 
 MAX_REQUEST_CHARS = 1000
@@ -37,7 +37,7 @@ def make_plan(request: str, selected_columns: Iterable[str], llm: LLMFn = comple
     request = validate_request(request)
     schema_block = schema_for_prompt(selected_columns)
 
-    reply = llm(PLANNER_SYSTEM, planner_user_prompt(schema_block, request)).strip()
+    reply = llm(planner_system(), planner_user_prompt(schema_block, request)).strip()
 
     if reply.upper().startswith(CANNOT_ANSWER_PREFIX):
         raise CannotAnswerError(reply[len(CANNOT_ANSWER_PREFIX) :].strip() or "no reason given")

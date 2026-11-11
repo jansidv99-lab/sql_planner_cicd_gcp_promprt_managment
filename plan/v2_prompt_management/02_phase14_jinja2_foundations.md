@@ -1,6 +1,6 @@
 # Phase 14 — Jinja2 foundations (detailed plan)
 
-**Status:** PLANNED, awaiting review.
+**Status:** IN PROGRESS. Code done on `feature/jinja2-prompt-templates`: 4 v1 templates, renderer, golden files captured from the f-strings before the change, CI in-image check. Gate green (152 tests, 100 % coverage); waiting on CI, merge and the CD check.
 **Part of:** [00_master_plan.md](00_master_plan.md) — prompt-engineering learning track (Phases 14–19)
 **Depends on:** Phase 13 ✅ (separate deploy target, so experiments never touch the old app).
 **Unblocks:** Phase 15 (partials and macros need the template environment).

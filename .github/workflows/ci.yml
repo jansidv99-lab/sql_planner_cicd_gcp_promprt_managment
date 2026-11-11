@@ -96,6 +96,14 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Phase 14: the prompts are Jinja2 files in app/prompt_templates/. Render every template
+      # inside the built image, so a template missing from the image fails CI, not the first
+      # production request. Needs no API key (rendering only, no LLM call).
+      - name: Check prompt templates in image
+        run: |
+          docker run --rm sql-planner-pm:ci \
+            python -c "from app.prompts import check_templates; check_templates()"
+
       # Smoke test (Phase 10): proves the image actually starts and serves the app.
       # - Port 8080 = the default $PORT set in the Phase 9 Dockerfile (Cloud Run's convention).
       # - /_stcore/health = Streamlit's built-in health endpoint for the Phase 7 UI;

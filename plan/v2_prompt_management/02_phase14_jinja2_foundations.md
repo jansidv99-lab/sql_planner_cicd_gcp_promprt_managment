@@ -1,6 +1,6 @@
 # Phase 14 — Jinja2 foundations (detailed plan)
 
-**Status:** IN PROGRESS. Code done on `feature/jinja2-prompt-templates`: 4 v1 templates, renderer, golden files captured from the f-strings before the change, CI in-image check. Gate green (152 tests, 100 % coverage); waiting on CI, merge and the CD check.
+**Status:** DONE (2026-11-11). PR #4 (rebase-merged: golden files `9d538e7`, then templates `296fc45`). Gate: 152 tests, 100 % coverage; CI in-image check printed `templates ok: 4`. CD deployed `sql-planner-pm-00005-drl`; a UI request logged `chain finished` status ok, 0 review errors (trace `8d17af98…`), timings in line with the f-string version.
 **Part of:** [00_master_plan.md](00_master_plan.md) — prompt-engineering learning track (Phases 14–19)
 **Depends on:** Phase 13 ✅ (separate deploy target, so experiments never touch the old app).
 **Unblocks:** Phase 15 (partials and macros need the template environment).

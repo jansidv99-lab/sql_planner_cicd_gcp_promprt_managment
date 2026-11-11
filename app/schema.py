@@ -49,12 +49,13 @@ def validate_selection(columns: Iterable[str]) -> tuple[str, ...]:
 
 
 def schema_for_prompt(columns: Iterable[str]) -> str:
-    """Describe the table with only the selected columns, for the Planner and Coder prompts."""
-    lines = [
-        f"Table: {TABLE_NAME}",
-        "Columns (use ONLY these; no other tables or columns exist):",
-    ]
-    for name in validate_selection(columns):
-        col = _BY_NAME[name]
-        lines.append(f"- {col.name} {col.sql_type} -- {col.description}")
-    return "\n".join(lines)
+    """Describe the table with only the selected columns, for the Planner and Coder prompts.
+
+    This module owns the data (and the validation); the layout is the Jinja2 partial
+    `app/prompt_templates/_partials/schema.j2` (Phase 15). Only selected columns are passed in,
+    so no other column can ever appear in a prompt.
+    """
+    from app.prompts import render_schema  # local import: prompts is the presentation layer
+
+    selected = [_BY_NAME[name] for name in validate_selection(columns)]
+    return render_schema(TABLE_NAME, selected)

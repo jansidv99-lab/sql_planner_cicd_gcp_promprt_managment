@@ -1,0 +1,7 @@
+{# Schema block. Variables: table, columns (only the SELECTED app.schema.Column objects).
+   app/schema.py stays the source of truth; this file only decides how it looks. #}
+Table: {{ table }}
+Columns (use ONLY these; no other tables or columns exist):
+{% for c in columns %}
+- {{ c.name }} {{ c.sql_type }} -- {{ c.description }}{{ "\n" if not loop.last }}
+{%- endfor %}

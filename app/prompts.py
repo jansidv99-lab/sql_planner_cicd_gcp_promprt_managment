@@ -13,6 +13,7 @@ Rules:
 from __future__ import annotations
 
 import functools
+from collections.abc import Sequence
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
@@ -23,20 +24,32 @@ TEMPLATE_DIR = Path(__file__).parent / "prompt_templates"
 VERSION = "v1"
 
 
+def tag(text: str, name: str) -> str:
+    """Jinja2 filter: wrap text in <name> ... </name> lines, e.g. `{{ request | tag("request") }}`."""
+    return f"<{name}>\n{text}\n</{name}>"
+
+
 @functools.lru_cache(maxsize=1)
 def _env() -> Environment:
-    return Environment(
+    env = Environment(
         loader=FileSystemLoader(TEMPLATE_DIR),
         undefined=StrictUndefined,
         autoescape=False,
         trim_blocks=True,
         lstrip_blocks=True,
     )
+    env.filters["tag"] = tag
+    return env
 
 
 def render(name: str, **variables: object) -> str:
     """Render `<VERSION>/<name>.j2` with the given variables."""
     return _env().get_template(f"{VERSION}/{name}.j2").render(**variables)
+
+
+def render_schema(table: str, columns: Sequence[object]) -> str:
+    """Render the schema block (`_partials/schema.j2`) from already-validated Column objects."""
+    return _env().get_template("_partials/schema.j2").render(table=table, columns=columns)
 
 
 def planner_system() -> str:
@@ -67,5 +80,6 @@ def check_templates() -> list[str]:
     coder_system()
     planner_user_prompt("schema", "request")
     coder_user_prompt("schema", "outline")
+    render_schema("table", [])
     print(f"templates ok: {len(names)}")
     return names

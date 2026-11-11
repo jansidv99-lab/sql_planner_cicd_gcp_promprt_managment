@@ -1,6 +1,12 @@
 # Phase 15 — Template features: partials, macros, loops, filters (detailed plan)
 
-**Status:** PLANNED, awaiting review.
+**Status:** IN PROGRESS. Code done on `refactor/prompt-partials-macros`; gate green (162 tests, 100 % coverage); golden files unchanged. Waiting on CI, merge and the CD check.
+
+**Changes from the plan (made during implementation):**
+- Continuation lines use Jinja's **built-in** `indent` filter (it already skips the first line), so no custom `indent_lines` filter is needed.
+- The custom filter is **`tag`** (`{{ request | tag("request") }}` → `<request>…</request>`), used by both user prompts, so it does real work.
+- The "flags for later versions" are a single optional **`hints`** list (`hints_section` macro, `hints | default([])`). It renders nothing in v1, and Phase 16 fills it per version. The few-shot `examples` slot is left for Phase 17, where it's designed.
+- `_partials/injection_guard.j2` became the `injection_guard(tag, what)` macro in `_partials/rules.j2`, next to the other shared rules.
 **Part of:** [00_master_plan.md](00_master_plan.md) — prompt-engineering learning track
 **Depends on:** Phase 14 (template environment + golden tests).
 **Unblocks:** Phase 16 (versions reuse these partials and blocks).

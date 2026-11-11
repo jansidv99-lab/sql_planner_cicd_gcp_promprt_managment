@@ -1,6 +1,6 @@
 # SQL Script Generator v2 (prompt management) — Master Plan
 
-**Status:** Phase 13 DONE (2026-11-11). Live app: https://sql-planner-pm-309866353676.asia-south1.run.app
+**Status:** Phase 13 DONE (2026-11-11). Phases 14–19 (prompt-engineering learning track) planned, awaiting review. Live app: https://sql-planner-pm-309866353676.asia-south1.run.app
 
 This folder holds **all planning for the new development** in the cloned repo
 `jansidv99-lab/sql_planner_cicd_gcp_promprt_managment`. The baseline (Phases 0–12) is documented
@@ -10,6 +10,30 @@ history and not edited**. New phases continue the numbering from Phase 13.
 | Phase | Plan doc | Result |
 |---|---|---|
 | 13 Separate GCP resources for this repo | `01_phase13_separate_gcp_resources.md` | ✅ PR #1 (+ docs PR #2); 141 tests, 100 % coverage; old app verified unchanged |
+| 14 Jinja2 foundations | `02_phase14_jinja2_foundations.md` | 📝 planned |
+| 15 Template features (partials, macros, loops, filters) | `03_phase15_template_features.md` | 📝 planned |
+| 16 Prompt versioning + observability | `04_phase16_versioning_observability.md` | 📝 planned |
+| 17 Few-shot examples | `05_phase17_few_shot_examples.md` | 📝 planned |
+| 18 Evaluation harness (local only) | `06_phase18_evaluation_harness.md` | 📝 planned |
+| 19 Promote best version + wrap up | `07_phase19_promote_and_wrap_up.md` | 📝 planned |
+
+### Prompt-engineering learning track (Phases 14–19)
+
+Learning goal: manage the Planner/Coder prompts as **Jinja2 templates** and improve them in
+measured steps, using the existing quality gate → CI → CD pipeline. Each phase teaches one idea
+and leaves production working.
+
+```
+14 templates (same text) ─► 15 partials/macros (same text) ─► 16 versions v1/v2 + version/hash in logs
+                                                                 │
+                                         17 few-shot v3 ◄────────┘
+                                                 │
+                          18 local eval v1 vs v2 vs v3 ─► 19 promote winner via PROMPT_VERSION
+```
+
+Decisions: templates in `app/prompt_templates/` (rendered by `app/prompts.py`); the version is
+chosen per deploy with the `PROMPT_VERSION` repo variable → CD → Cloud Run; the eval runs **locally
+only** (CI keeps needing no secrets); golden files keep v1 byte-identical through Phases 14–15.
 
 ---
 

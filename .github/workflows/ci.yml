@@ -92,7 +92,7 @@ jobs:
         with:
           context: .
           load: true
-          tags: sql-planner:ci
+          tags: sql-planner-pm:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -105,7 +105,7 @@ jobs:
       #   from Phase 7), which is enough to prove the container works.
       - name: Smoke test container
         run: |
-          docker run -d --name app -p 8080:8080 sql-planner:ci
+          docker run -d --name app -p 8080:8080 sql-planner-pm:ci
           for i in $(seq 1 30); do
             if curl -fsS http://localhost:8080/_stcore/health; then
               echo " <- health OK"

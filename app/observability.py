@@ -26,11 +26,16 @@ from opentelemetry.trace import Status as SpanStatus
 from opentelemetry.trace import StatusCode
 
 APP_LOGGER = "app"
-SERVICE_NAME = "sql-planner"
+DEFAULT_SERVICE_NAME = "sql-planner-pm"
 
 
 def on_cloud_run() -> bool:
     return bool(os.environ.get("K_SERVICE"))
+
+
+def service_name() -> str:
+    """Trace service name: the Cloud Run service (K_SERVICE), else this app's default."""
+    return os.environ.get("K_SERVICE") or DEFAULT_SERVICE_NAME
 
 
 def tracing_enabled() -> bool:
@@ -86,7 +91,7 @@ def setup_tracing() -> bool:
 
     resource = get_aggregated_resources(
         [GoogleCloudResourceDetector(raise_on_error=False)],
-        initial_resource=Resource.create({"service.name": SERVICE_NAME}),
+        initial_resource=Resource.create({"service.name": service_name()}),
     )
     provider = TracerProvider(resource=resource, sampler=ALWAYS_ON)  # every run is traced
     # Batch processor: spans are sent in the background, never slowing the UI.

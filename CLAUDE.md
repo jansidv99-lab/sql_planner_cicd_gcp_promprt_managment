@@ -4,8 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-All phases (0–12) are done: app, quality gate, Docker image, GitHub Actions CI, CD to Cloud Run
-(public: https://sql-planner-309866353676.asia-south1.run.app) and logging/tracing. Status table: `plan/00_master_plan.md`.
+This repo is a **clone** of `jansidv99-lab/sql_planner_cicd_gcp` (baseline Phases 0–12, live as
+Cloud Run service `sql-planner`; plans in `plan/00_master_plan.md` … `plan/13_*.md`, kept as
+history). New development ("v2", from Phase 13) deploys a **separate** app, `sql-planner-pm`,
+with its own GCP resources. All new plan docs go in `plan/v2_prompt_management/` (status table:
+`plan/v2_prompt_management/00_master_plan.md`); don't edit the baseline plan files.
 Python 3.11, with dependencies pinned in `requirements*.txt`.
 
 ## Architecture
@@ -62,7 +65,7 @@ values); mount it read-only instead and let python-dotenv parse it. The image co
 
 - Never commit directly to `main`: work on a branch, open a PR (`gh pr create`), wait for CI, and
   merge only after the user approves.
-- Repo: `jansidv99-lab/sql_planner_cicd_gcp` (private). `.github/workflows/ci.yml` runs on PRs and
+- Repo: `jansidv99-lab/sql_planner_cicd_gcp_promprt_managment` (private). `.github/workflows/ci.yml` runs on PRs and
   pushes to `main`: job `quality` (the gate above) then job `docker` (build image + container
   smoke test on `/_stcore/health`). CI needs no secrets.
 - `git push` authenticates via Git Credential Manager; the `gh` token has no `workflow` scope.
@@ -73,17 +76,21 @@ values); mount it read-only instead and let python-dotenv parse it. The image co
 
 - `.github/workflows/cd.yml` runs after CI succeeds on `main` (`workflow_run`) or manually
   (`workflow_dispatch`): keyless auth (WIF) → build → push to Artifact Registry (tag = commit SHA)
-  → `gcloud run deploy sql-planner` (region `asia-south1`) → health check. `workflow_run` only
+  → `gcloud run deploy sql-planner-pm` (region `asia-south1`) → health check. `workflow_run` only
   uses the workflow file from `main`, so CD changes can't be tested on a PR.
-- One-time setup is `scripts/gcp_setup.sh` (re-runnable). Dedicated resources: repo `sql-planner`,
-  secret `sql-planner-openai-api-key`, SAs `sql-planner-runtime` / `sql-planner-deployer`, WIF
-  provider `github-sql-planner` (only this repo's `main`). Config lives in GitHub repo variables.
-- The same GCP project hosts another app's resources (`gh-deployer`, `run-runtime`,
-  `github-provider`, repo `apps`, secret `openai-api-key`): never modify them.
+- One-time setup is `scripts/gcp_setup.sh` (re-runnable; needs a local `.env`). Dedicated
+  resources: Artifact Registry repo `sql-planner-pm`, secret `sql-planner-pm-openai-api-key`, SAs
+  `sql-planner-pm-runtime` / `sql-planner-pm-deployer`, WIF pool `sql-planner-pm-pool` with
+  provider `github-sql-planner-pm` (only this repo's `main`). Config lives in GitHub repo variables.
+- The same GCP project hosts other apps' resources; never modify them (the setup script's guard
+  refuses these names): the **old app** (`sql-planner` service and AR repo,
+  `sql-planner-openai-api-key`, `sql-planner-runtime`, `sql-planner-deployer`,
+  `github-sql-planner`) and **chain_prompting_cloud_gcp** (`gh-deployer`, `run-runtime`,
+  `github-pool`, `github-provider`, repo `apps`, secret `openai-api-key`).
 - The service is public (`allUsers` → `roles/run.invoker`, set once by the owner). The deployer
   has `run.developer`, so CD can't change access. CD's smoke check relies on public access: on a
   private service it gets 403.
-- Rollback: `gcloud run services update-traffic sql-planner --region asia-south1
+- Rollback: `gcloud run services update-traffic sql-planner-pm --region asia-south1
   --to-revisions <previous-revision>=100`, or re-run CD from the Actions tab.
 
 ## Logging and tracing (Phase 12)
@@ -91,7 +98,7 @@ values); mount it read-only instead and let python-dotenv parse it. The image co
 - `app/observability.py`: `setup_logging()` attaches google-cloud-logging's `StructuredLogHandler`
   (JSON on stdout → Cloud Logging, auto-linked to the active trace; needs no credentials) to the
   `app` logger; `setup_tracing()` installs OpenTelemetry → Cloud Trace (every run sampled) only on
-  Cloud Run (`K_SERVICE`) or with `TRACING_ENABLED=true`. Both are called once from
+  Cloud Run (`K_SERVICE`, also used as the trace service name) or with `TRACING_ENABLED=true`. Both are called once from
   `streamlit_app.py` via `st.cache_resource`.
 - Each chain run = trace `chain.run` → `planner`/`coder` (→ `llm.complete`) / `reviewer`, plus one
   log line `chain finished` (status, error type, columns, durations). Use `observability.span()`,
@@ -100,7 +107,7 @@ values); mount it read-only instead and let python-dotenv parse it. The image co
 - Tests: `tests/conftest.py` installs an in-memory span exporter (`spans` fixture) and resets the
   `app` logger after each test.
 - Log lines must be written while the relevant span is active, or they lose the trace link.
-- To inspect production: `gcloud logging read 'resource.labels.service_name="sql-planner" AND
+- To inspect production: `gcloud logging read 'resource.labels.service_name="sql-planner-pm" AND
   jsonPayload.message="chain finished"'`, then fetch the trace by ID
   (`GET cloudtrace.googleapis.com/v1/projects/<project>/traces/<id>`); the v1 list endpoint
   returned nothing during verification.
@@ -138,3 +145,4 @@ Copy `.env.example` to `.env` and fill it in (`.env` holds secrets and is gitign
 3. **Permission:** always ask for permission before making any change to code.
 4. **Phased implementation:** plan code phase by phase, step by step, stating the purpose of each step and its dependencies.
 5. **Commit step:** always ask for permission before every commit
+6. **branch naming:** always provide the meaning full descriptions for the branches use more profissional naming line featrures,bugs, fix .....

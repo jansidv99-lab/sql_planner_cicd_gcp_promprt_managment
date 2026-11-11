@@ -33,13 +33,13 @@ permissions:
 
 # Never cancel a deploy halfway; a newer deploy waits for the running one.
 concurrency:
-  group: cd-production
+  group: cd-production-pm
   cancel-in-progress: false
 
 env:
-  SERVICE: sql-planner # Cloud Run service name
-  AR_REPO: sql-planner # Artifact Registry repo (created by scripts/gcp_setup.sh)
-  SECRET_NAME: sql-planner-openai-api-key # Secret Manager secret (created by setup)
+  SERVICE: sql-planner-pm # Cloud Run service name (Phase 13: separate from the old app's sql-planner)
+  AR_REPO: sql-planner-pm # Artifact Registry repo (created by scripts/gcp_setup.sh)
+  SECRET_NAME: sql-planner-pm-openai-api-key # Secret Manager secret (created by setup)
 
 jobs:
   deploy:
@@ -99,7 +99,7 @@ jobs:
             --min-instances 0 --max-instances 2 \
             --session-affinity --timeout 3600 \
             --startup-probe "httpGet.path=/_stcore/health,periodSeconds=5,failureThreshold=12" \
-            --labels "app=sql-planner,commit=${COMMIT_SHA:0:12}" \
+            --labels "app=sql-planner-pm,commit=${COMMIT_SHA:0:12}" \
             --quiet
           URL="$(gcloud run services describe "${SERVICE}" --project "${PROJECT_ID}" \
                  --region "${REGION}" --format='value(status.url)')"

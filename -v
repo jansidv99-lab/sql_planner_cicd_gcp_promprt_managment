@@ -1,8 +1,0 @@
-============================= test session starts =============================
-platform win32 -- Python 3.11.9, pytest-9.2.0, pluggy-1.7.0
-rootdir: C:\Users\vamsi\Desktop\udacity\sql_planner_cicd_gcp
-configfile: pyproject.toml
-plugins: anyio-4.16.0
-collected 0 items
-
-============================ no tests ran in 0.01s ============================
